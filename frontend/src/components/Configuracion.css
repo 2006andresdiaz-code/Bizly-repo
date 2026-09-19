@@ -1,0 +1,70 @@
+/* src/components/Configuracion.css */
+.tabs-nav {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 25px;
+}
+
+.tab-link {
+  background: none;
+  border: none;
+  padding: 10px 5px 15px;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-link:hover { color: #1e293b; }
+
+.tab-link.active {
+  color: #1e293b;
+  border-bottom-color: #624bff; /* Morado Bizly */
+  font-weight: 600;
+}
+
+.config-panel {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  padding: 30px;
+  max-width: 800px;
+}
+
+.form-section-title {
+  font-size: 16px;
+  color: #1e293b;
+  margin: 0 0 20px 0;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.config-form .input-group { margin-bottom: 20px; }
+.config-form .input-row { display: flex; gap: 20px; }
+.config-form .input-row .input-group { flex: 1; }
+
+.config-form input, .config-form select {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+.config-form input:focus, .config-form select:focus { border-color: #624bff; }
+.config-form label { display: block; font-size: 13px; color: #64748b; margin-bottom: 6px; font-weight: 500; }
+.config-form label span { color: #ef4444; }
+
+.btn-save {
+  background-color: #624bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.btn-save:hover { background-color: #4f39f6; }

@@ -1,0 +1,56 @@
+/* src/components/Auditoria.css */
+.audit-list {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.audit-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.audit-item:last-child { border-bottom: none; }
+
+.audit-avatar-container { margin-right: 15px; }
+
+.audit-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+  color: white;
+}
+.bg-blue { background-color: #64B5F6; }
+.bg-purple { background-color: #d8b4fe; color: #6b21a8; }
+
+.audit-info { flex: 1; }
+
+.audit-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.audit-name { font-weight: 600; font-size: 14px; color: #1e293b; }
+.audit-module { font-size: 13px; color: #64748b; font-weight: 500; }
+
+.audit-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.badge-green { background-color: #dcfce7; color: #166534; }
+.badge-blue { background-color: #e0f2fe; color: #0369a1; }
+
+.audit-desc { font-size: 13px; color: #64748b; }
+.audit-time { font-size: 12px; color: #94a3b8; }

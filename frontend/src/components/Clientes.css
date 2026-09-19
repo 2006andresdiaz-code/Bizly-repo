@@ -1,0 +1,69 @@
+.client-card {
+  padding-top: 15px; /* Da un poco de aire arriba */
+}
+
+.client-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 0 20px;
+  margin-bottom: 15px;
+}
+
+.client-avatar {
+  background-color: #eef2ff;
+  color: #624bff; /* Morado estilo Bizly para el avatar */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.client-info h4 {
+  margin: 0 0 3px 0;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.client-doc {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.client-body {
+  padding: 0 20px 20px;
+  flex: 1;
+}
+
+.client-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.client-spent {
+  color: #624bff;
+  font-weight: 600;
+}
+
+.client-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Modificación sutil al botón primario para el modal de clientes */
+.modal-footer .btn-primary {
+  background-color: #624bff; /* Morado Bizly */
+}
+.modal-footer .btn-primary:hover {
+  background-color: #4f39f6;
+}

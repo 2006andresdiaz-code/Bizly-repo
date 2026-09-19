@@ -1,0 +1,183 @@
+/* src/components/Login.css */
+:root {
+  --bizly-blue: #5cdb6d; 
+  --bizly-green: #4bd152; 
+  /* Cambiamos el fondo por un verde menta con mucha más vida */
+  --bg-color: #175d7e; 
+  
+  --text-dark: #333333;
+  --text-light: #666666;
+  --border-color: #d1d5db;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-color);
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.login-card {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 400px;
+  border: 2px solid #1a1a2e; 
+}
+
+.login-header {
+  margin-bottom: 30px;
+}
+
+.logo-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.bizly-logo {
+  width: 50px;
+  height: 50px;
+  /* ¡Esta es la magia que hace el encuadre redondo! */
+  border-radius: 50%; 
+  object-fit: cover;
+  /* Opcional: Le agregamos un pequeño borde azul para que resalte más */
+  border: 2px solid var(--bizly-blue); 
+  background-color: white; /* Por si la imagen tiene transparencias */
+}
+
+.logo-placeholder h2 {
+  margin: 0;
+  color: black;
+  font-size: 24px;
+}
+
+.login-header h3 {
+  margin: 0 0 5px 0;
+  color: var(--text-dark);
+  font-size: 22px;
+}
+
+.login-header p {
+  margin: 0;
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  font-size: 13px;
+  color: var(--text-light);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.input-group label span {
+  color: #e63946; 
+}
+
+.input-group input {
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+  border-color: var(--bizly-blue);
+  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 14px;
+  background-color: var(--bizly-blue); 
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 10px;
+}
+
+.btn-submit:hover {
+  background-color: var(--bizly-green); 
+}
+
+.login-footer {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-light);
+}
+
+.login-footer a {
+  color: var(--bizly-blue);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.login-footer a:hover {
+  color: var(--bizly-green);
+  text-decoration: underline;
+}
+
+.login-footer span {
+  margin: 0 10px;
+}
+/* --- Nuevos estilos para Registro --- */
+.input-row {
+  display: flex;
+  gap: 15px; /* Espacio entre Nombre y Apellido */
+}
+
+.input-row .input-group {
+  flex: 1; /* Hace que ambos campos midan lo mismo */
+}
+
+.helper-text {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.checkbox-group input {
+  margin-top: 3px;
+  accent-color: var(--bizly-blue); /* Pinta el checkbox del azul de Bizly */
+}
+
+.checkbox-group a {
+  color: var(--bizly-blue);
+  text-decoration: none;
+}
+
+.checkbox-group a:hover {
+  text-decoration: underline;
+}
