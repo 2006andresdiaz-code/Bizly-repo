@@ -78,7 +78,7 @@ function Reportes() {
           <div className="header-actions">
             <button className="btn-secondary">⭳ Exportar período</button>
             <div className="header-user" style={{marginLeft: '20px'}}>
-              <strong>Admin Bizly</strong>
+              <strong>Admin Bizly</strong>npm 
             </div>
           </div>
         </header>
