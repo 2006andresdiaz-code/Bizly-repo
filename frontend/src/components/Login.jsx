@@ -1,4 +1,6 @@
 // src/components/Login.jsx
+//Correo de prueva: samuel.torres393@example.com
+//y su contraseña es: 123456
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useState } from "react";

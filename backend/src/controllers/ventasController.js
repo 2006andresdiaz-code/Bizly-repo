@@ -3,28 +3,28 @@ const db = require('../config/db');
 
 // --- 1. FUNCIÓN PARA CREAR VENTAS (Con Transacción Segura) ---
 exports.crearVenta = async (req, res) => {
-  const connection = await db.getConnection(); // Obtenemos una conexión exclusiva para la transacción
+  const connection = await db.getConnection(); 
   try {
-    await connection.beginTransaction(); // 1. Iniciamos la transacción
+    await connection.beginTransaction(); 
 
     const { id_cliente, id_usuario, total, metodo_pago, carrito } = req.body;
 
-    // Validación básica
     if (!id_usuario || !total || !carrito || carrito.length === 0) {
       connection.release();
-      return res.status(400).json({ error: 'Faltan campos obligatorios (id_usuario, total) o el carrito está vacío' });
+      return res.status(400).json({ error: 'Faltan campos obligatorios o el carrito está vacío' });
     }
 
-    // Insertamos la cabecera de la venta usando las columnas reales de tu tabla 'ventas'
+    // Generamos un número de factura único automáticamente
+    const numero_factura = `FAC-${Date.now().toString().slice(-8)}`;
+
     const [ventaResult] = await connection.query(
-      `INSERT INTO ventas (id_cliente, id_usuario, total, metodo_pago)
-        VALUES (?, ?, ?, ?)`,
-      [id_cliente || null, id_usuario, total, metodo_pago || 'Efectivo']
+      `INSERT INTO ventas (numero_factura, id_cliente, id_vendedor, total, metodo_pago)
+        VALUES (?, ?, ?, ?, ?)`,
+      [numero_factura, id_cliente || null, id_usuario, total, metodo_pago || 'Efectivo']
     );
 
     const id_venta = ventaResult.insertId;
 
-    // Recorremos el carrito para los detalles y el descuento de inventario
     for (let item of carrito) {
       const subtotalItem = item.cantidad * item.precio_venta;
 
@@ -40,17 +40,18 @@ exports.crearVenta = async (req, res) => {
       );
     }
 
-    await connection.commit(); // 2. Si todo salió perfecto, guardamos los cambios
-    connection.release();      // Liberamos la conexión
+    await connection.commit(); 
+    connection.release();      
 
     res.status(201).json({
       mensaje: 'Venta registrada con éxito',
-      id_venta: id_venta
+      id_venta: id_venta,
+      numero_factura: numero_factura
     });
 
   } catch (error) {
-    await connection.rollback(); // 3. Si ocurre cualquier error, revertimos la operación
-    connection.release();      // Liberamos la conexión
+    await connection.rollback(); 
+    connection.release();      
     console.error('Error al registrar la venta:', error);
     res.status(500).json({
       error: 'Error en el servidor al procesar la venta',
@@ -63,7 +64,18 @@ exports.crearVenta = async (req, res) => {
 // --- 2. FUNCIÓN PARA OBTENER VENTAS (DASHBOARD) ---
 exports.obtenerVentas = async (req, res) => {
   try {
-    const [ventas] = await db.query('SELECT * FROM ventas ORDER BY created_at DESC');
+    const { inicio, fin } = req.query;
+    let query = 'SELECT * FROM ventas';
+    let params = [];
+
+    if (inicio && fin) {
+      query += ' WHERE DATE(created_at) BETWEEN ? AND ?';
+      params.push(inicio, fin);
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const [ventas] = await db.query(query, params);
     res.json(ventas);
   } catch (error) {
     console.error('Error al obtener las ventas:', error);

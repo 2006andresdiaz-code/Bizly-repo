@@ -2,8 +2,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import Sidebar from './Sidebar';
-import './Dashboard.css'; 
-import './Ventas.css'; 
+
 import './Inventario.css'; 
 
 function Inventario() {
@@ -13,12 +12,15 @@ function Inventario() {
   const [productos, setProductos] = useState([]);
   const [cargando, setCargando] = useState(true);
 
+  // Estado para identificar si estamos editando un producto existente
+  const [idProductoEditando, setIdProductoEditando] = useState(null);
+
   // Estados para búsqueda y filtros interactivos
   const [busqueda, setBusqueda] = useState('');
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('Todas');
   const [filtroStock, setFiltroStock] = useState('todos');
 
-  // Estado para guardar lo que el usuario escribe en el formulario
+  // Estado del formulario
   const [formulario, setFormulario] = useState({
     nombre: '',
     codigo: '',
@@ -27,7 +29,6 @@ function Inventario() {
     stock_actual: ''
   });
 
-  // Convertimos las categorías a objetos con su ID real de la BD
   const categoriasDB = [
     { id: 1, nombre: "Abarrotes" },
     { id: 2, nombre: "Lácteos y refrigerados" },
@@ -36,7 +37,6 @@ function Inventario() {
     { id: 5, nombre: "Cuidado personal" }
   ];
 
-  // Petición para cargar el inventario desde el Backend con Token JWT
   const cargarInventario = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -52,7 +52,6 @@ function Inventario() {
         const data = await response.json();
         setProductos(Array.isArray(data) ? data : data.productos || []);
       } else {
-        console.error("Error al cargar productos, estado:", response.status);
         setProductos([]);
       }
     } catch (error) {
@@ -67,7 +66,6 @@ function Inventario() {
     cargarInventario();
   }, []);
 
-  // Función para capturar lo que se escribe en los inputs del formulario
   const manejarCambio = (e) => {
     setFormulario({
       ...formulario,
@@ -75,17 +73,49 @@ function Inventario() {
     });
   };
 
-  // Función que se ejecuta al darle clic a "Guardar producto" con Token JWT
+  // Abrir modal para Crear nuevo producto
+  const abrirModalCrear = () => {
+    setIdProductoEditando(null);
+    setFormulario({ nombre: '', codigo: '', id_categoria: '', precio_venta: '', stock_actual: '' });
+    setModalAbierto(true);
+  };
+
+  // Abrir modal para Editar un producto existente
+  const abrirModalEditar = (producto) => {
+    const idReal = producto.id || producto.id_producto;
+    if (!idReal) {
+      alert("Error: El producto no tiene un ID válido.");
+      return;
+    }
+
+    setIdProductoEditando(idReal);
+    setFormulario({
+      nombre: producto.nombre || '',
+      codigo: producto.codigo || '',
+      id_categoria: producto.id_categoria || '',
+      precio_venta: producto.precio_venta || '',
+      stock_actual: producto.stock_actual || ''
+    });
+    setModalAbierto(true);
+  };
+
+  // Guardar producto (POST para nuevo, PUT para editar)
   const guardarProducto = async () => {
-    if (!formulario.nombre || !formulario.codigo || !formulario.precio_venta || !formulario.stock_actual) {
+    if (!formulario.nombre || !formulario.codigo || !formulario.id_categoria || !formulario.precio_venta || !formulario.stock_actual) {
       alert("Por favor, llena todos los campos obligatorios.");
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/productos', {
-        method: 'POST',
+      const url = idProductoEditando 
+        ? `http://localhost:5000/api/productos/${idProductoEditando}` 
+        : 'http://localhost:5000/api/productos';
+      
+      const metodo = idProductoEditando ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: metodo,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : ''
@@ -94,34 +124,62 @@ function Inventario() {
       });
 
       if (response.ok) {
-        alert("¡Producto guardado exitosamente!");
+        alert(idProductoEditando ? "¡Producto actualizado exitosamente!" : "¡Producto guardado exitosamente!");
         setModalAbierto(false); 
+        setIdProductoEditando(null);
         setFormulario({ nombre: '', codigo: '', id_categoria: '', precio_venta: '', stock_actual: '' }); 
         cargarInventario(); 
       } else {
         const errData = await response.json().catch(() => ({}));
-        alert(`Error al guardar el producto: ${errData.message || response.statusText}`);
+        alert(`Error al guardar: ${errData.error || response.statusText}`);
       }
     } catch (error) {
-      console.error("Error en la petición POST:", error);
+      console.error("Error en la petición:", error);
     }
   };
 
-  // --- LÓGICA DE FILTRADO INTELIGENTE ---
+  // Desactivar / Eliminar producto conectado a MySQL
+  const desactivarProducto = async (producto) => {
+    const idReal = producto.id || producto.id_producto;
+    if (!idReal) {
+      alert("Error: No se pudo identificar el ID del producto.");
+      return;
+    }
+
+    if (!window.confirm(`¿Estás seguro de que deseas desactivar el producto "${producto.nombre}"?`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/productos/${idReal}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+
+      if (response.ok) {
+        alert("Producto desactivado correctamente.");
+        cargarInventario(); 
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`No se pudo desactivar el producto: ${errorData.error || response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error de conexión al eliminar producto:", error);
+    }
+  };
+
   const totalProductos = Array.isArray(productos) ? productos.length : 0;
   const stockBajoCount = Array.isArray(productos) ? productos.filter(p => p.stock_actual <= p.stock_minimo).length : 0;
 
   const productosFiltrados = Array.isArray(productos) ? productos.filter(producto => {
-    // 1. Filtro por búsqueda (nombre o SKU)
     const textoMatch = 
       (producto.nombre && producto.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
       (producto.codigo && producto.codigo.toLowerCase().includes(busqueda.toLowerCase()));
 
-    // 2. Filtro por categoría
     const categoriaMatch = 
       categoriaSeleccionada === 'Todas' || producto.id_categoria.toString() === categoriaSeleccionada.toString();
 
-    // 3. Filtro por estado de stock
     let stockMatch = true;
     if (filtroStock === 'bajo') {
       stockMatch = producto.stock_actual <= producto.stock_minimo;
@@ -143,7 +201,7 @@ function Inventario() {
           </div>
           <div className="header-actions">
             <button className="btn-secondary">⭳ Importar CSV</button>
-            <button className="btn-primary" onClick={() => setModalAbierto(true)}>
+            <button className="btn-primary" onClick={abrirModalCrear}>
               + Nuevo producto
             </button>
             <div className="header-user" style={{marginLeft: '20px'}}>
@@ -152,7 +210,6 @@ function Inventario() {
           </div>
         </header>
 
-        {/* Alerta interactiva de stock bajo */}
         {stockBajoCount > 0 && (
           <div 
             className="alert-warning" 
@@ -160,11 +217,10 @@ function Inventario() {
             style={{ cursor: 'pointer', transition: 'all 0.2s' }}
             title="Haz clic para alternar el filtro de stock bajo"
           >
-            ⚠️ {stockBajoCount} producto(s) con stock bajo o agotado. <em>(Haz clic aquí para {filtroStock === 'bajo' ? 'ver todos' : 'filtrarlos'})</em>
+            ⚠️ {stockBajoCount} producto(s) con stock bajo o agotado.
           </div>
         )}
 
-        {/* Barra de Acciones y Filtros */}
         <div className="action-bar">
           <div className="search-container">
             <span className="search-icon">🔍</span>
@@ -198,7 +254,6 @@ function Inventario() {
           </select>
         </div>
 
-        {/* Cuadrícula de Productos Dinámica con alertas visuales de color */}
         <div className="products-grid">
           {cargando ? (
             <p>Cargando inventario...</p>
@@ -228,8 +283,8 @@ function Inventario() {
                     </div>
                   </div>
                   <div className="product-actions">
-                    <button className="btn-action">✎ Editar</button>
-                    <button className="btn-action danger">🗑 Desactivar</button>
+                    <button className="btn-action" onClick={() => abrirModalEditar(producto)}>✎ Editar</button>
+                    <button className="btn-action danger" onClick={() => desactivarProducto(producto)}>🗑 Desactivar</button>
                   </div>
                 </div>
               );
@@ -238,12 +293,12 @@ function Inventario() {
         </div>
       </main>
 
-      {/* Modal conectado al estado 'formulario' */}
+      {/* Modal para Crear y Editar */}
       {modalAbierto && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2>Nuevo producto</h2>
+              <h2>{idProductoEditando ? 'Editar producto' : 'Nuevo producto'}</h2>
               <button className="close-btn" onClick={() => setModalAbierto(false)}>✕</button>
             </div>
             
@@ -307,7 +362,9 @@ function Inventario() {
 
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setModalAbierto(false)}>Cancelar</button>
-              <button className="btn-primary" onClick={guardarProducto}>Guardar producto</button>
+              <button className="btn-primary" onClick={guardarProducto}>
+                {idProductoEditando ? 'Actualizar cambios' : 'Guardar producto'}
+              </button>
             </div>
           </div>
         </div>
