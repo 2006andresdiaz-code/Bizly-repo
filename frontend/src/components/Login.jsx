@@ -58,7 +58,7 @@ function Login() {
              <h2>Bizly</h2>
           </div>
           <h3>Bienvenido de vuelta</h3>
-          <p>Inicia sesión para continuar</p>
+          <p>Inicia sesión para continuar con nosotros...</p>
         </div>
         
         <form onSubmit={iniciarSesion} className="login-form">
