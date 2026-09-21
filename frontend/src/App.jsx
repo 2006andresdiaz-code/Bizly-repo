@@ -1,6 +1,8 @@
+// src/App.jsx
 import { useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import { EmpresaProvider } from './context/EmpresaContext';
 
 import Auditoria from './components/Auditoria';
 import Configuracion from './components/Configuracion';
@@ -33,24 +35,26 @@ const RutaProtegida = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Rutas Públicas */}
-          <Route path="/" element={<Login />} />
-          <Route path="/registro" element={<Registro />} />
-          <Route path="/recuperar" element={<RecuperarPassword />} />
+      <EmpresaProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Rutas Públicas */}
+            <Route path="/" element={<Login />} />
+            <Route path="/registro" element={<Registro />} />
+            <Route path="/recuperar" element={<RecuperarPassword />} />
 
-          {/* 🔒 Rutas Protegidas (Requieren Login) */}
-          <Route path="/dashboard" element={<RutaProtegida><Dashboard /></RutaProtegida>} />
-          <Route path="/ventas" element={<RutaProtegida><Ventas /></RutaProtegida>} />
-          <Route path="/inventario" element={<RutaProtegida><Inventario /></RutaProtegida>} />
-          <Route path="/clientes" element={<RutaProtegida><Clientes /></RutaProtegida>} />
-          <Route path="/reportes" element={<RutaProtegida><Reportes /></RutaProtegida>} />
-          <Route path="/auditoria" element={<RutaProtegida><Auditoria /></RutaProtegida>} />
-          <Route path="/configuracion" element={<RutaProtegida><Configuracion /></RutaProtegida>} />
-          <Route path="/micuenta" element={<RutaProtegida><MiCuenta /></RutaProtegida>} />
-        </Routes>
-      </BrowserRouter>
+            {/* 🔒 Rutas Protegidas (Requieren Login) */}
+            <Route path="/dashboard" element={<RutaProtegida><Dashboard /></RutaProtegida>} />
+            <Route path="/ventas" element={<RutaProtegida><Ventas /></RutaProtegida>} />
+            <Route path="/inventario" element={<RutaProtegida><Inventario /></RutaProtegida>} />
+            <Route path="/clientes" element={<RutaProtegida><Clientes /></RutaProtegida>} />
+            <Route path="/reportes" element={<RutaProtegida><Reportes /></RutaProtegida>} />
+            <Route path="/auditoria" element={<RutaProtegida><Auditoria /></RutaProtegida>} />
+            <Route path="/configuracion" element={<RutaProtegida><Configuracion /></RutaProtegida>} />
+            <Route path="/micuenta" element={<RutaProtegida><MiCuenta /></RutaProtegida>} />
+          </Routes>
+        </BrowserRouter>
+      </EmpresaProvider>
     </AuthProvider>
   );
 }

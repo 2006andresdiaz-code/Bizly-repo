@@ -2,11 +2,13 @@
 import { useContext } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { EmpresaContext } from '../context/EmpresaContext';
 import logoBizly from '../assets/logo-bizly.png';
 
 function Sidebar() {
-  const location = useLocation(); // Detecta la URL actual
+  const { nombreEmpresa } = useContext(EmpresaContext);
   const { usuario, logout } = useContext(AuthContext);
+  const location = useLocation();
   const navigate = useNavigate();
   
   const cerrarSesion = () => {
@@ -16,15 +18,15 @@ function Sidebar() {
 
   return (
     <aside className="sidebar">
+      {/* Bloque de marca unificado y dinámico */}
       <div className="sidebar-brand">
         <img src={logoBizly} alt="Bizly Logo" className="sidebar-logo" />
         <div>
-          <h2>Mi Tienda</h2>
-          {/* El nombre debajo del logo ahora también es dinámico */}
+          <h2>{nombreEmpresa}</h2>
           <p>{usuario?.nombre} {usuario?.apellido}</p>
         </div>
       </div>
-      
+
       <div className="sidebar-badge">Plan Business</div>
 
       <nav className="sidebar-nav">
@@ -40,20 +42,16 @@ function Sidebar() {
 
       <div className="sidebar-footer">
         <div className="user-profile">
-          {/* Extraemos la primera letra del nombre y del apellido para el Avatar */}
           <div className="avatar">
             {usuario?.nombre?.charAt(0)}{usuario?.apellido?.charAt(0)}
           </div>
           <div className="user-info">
-            {/* Mostramos nombre y apellido reales de MySQL */}
             <span className="name">{usuario?.nombre} {usuario?.apellido}</span>
-            {/* Lógica rápida para mostrar el rol según el id_rol */}
             <span className="role">
               {usuario?.id_rol === 1 ? 'Administrador' : 'Vendedor'}
             </span>
           </div>
         </div>
-        {/* Cambiamos el Link por un botón que ejecuta cerrarSesion() */}
         <button onClick={cerrarSesion} className="logout-btn">Salir</button>
       </div>
     </aside>

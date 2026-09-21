@@ -1,15 +1,28 @@
 // src/components/Configuracion.jsx
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import Sidebar from './Sidebar';
+import { EmpresaContext } from '../context/EmpresaContext';
 import './Dashboard.css';
 import './Ventas.css'; // Reutilizamos estilos de tabla
 import './Configuracion.css';
 
 function Configuracion() {
-  // Estado para controlar qué pestaña está activa ('empresa', 'usuarios' o 'plan')
   const [tabActiva, setTabActiva] = useState('empresa');
+  const { nombreEmpresa, actualizarNombreEmpresa } = useContext(EmpresaContext);
+  
+  // Estado local para el formulario de empresa
+  const [nombreInput, setNombreInput] = useState(nombreEmpresa);
+  const [telefonoInput, setTelefonoInput] = useState('3001234567');
+  const [emailInput, setEmailInput] = useState('negocio@email.com');
+  const [direccionInput, setDireccionInput] = useState('Calle 1 # 2-3');
 
-  // Datos simulados de la imagen para la tabla de usuarios
+  const manejarGuardarEmpresa = (e) => {
+    e.preventDefault();
+    actualizarNombreEmpresa(nombreInput);
+    alert('¡Información de la empresa actualizada con éxito!');
+  };
+
+  // Datos simulados de la tabla de usuarios
   const usuarios = [
     { id: 1, usuario: 'prueba 1', correo: 'soporte.bizly@gmail.com', verificado: false, rol: 'Empleado', estado: 'Activo' },
     { id: 2, usuario: '6 1', correo: 'hainermartinez722@gmail.com', verificado: false, rol: 'Empleado', estado: 'Activo' },
@@ -65,24 +78,41 @@ function Configuracion() {
         {tabActiva === 'empresa' && (
           <div className="config-panel">
             <h3 className="form-section-title">Información del negocio</h3>
-            <form className="config-form" onSubmit={(e) => e.preventDefault()}>
+            <form className="config-form" onSubmit={manejarGuardarEmpresa}>
               <div className="input-group">
                 <label>Nombre del negocio <span>*</span></label>
-                <input type="text" defaultValue="Mi Tienda" />
+                <input 
+                  type="text" 
+                  value={nombreInput} 
+                  onChange={(e) => setNombreInput(e.target.value)} 
+                  required 
+                />
               </div>
               <div className="input-row">
                 <div className="input-group">
                   <label>Teléfono</label>
-                  <input type="text" defaultValue="3001234567" />
+                  <input 
+                    type="text" 
+                    value={telefonoInput} 
+                    onChange={(e) => setTelefonoInput(e.target.value)} 
+                  />
                 </div>
                 <div className="input-group">
                   <label>Email</label>
-                  <input type="email" defaultValue="negocio@email.com" />
+                  <input 
+                    type="email" 
+                    value={emailInput} 
+                    onChange={(e) => setEmailInput(e.target.value)} 
+                  />
                 </div>
               </div>
               <div className="input-group">
                 <label>Dirección</label>
-                <input type="text" defaultValue="Calle 1 # 2-3" />
+                <input 
+                  type="text" 
+                  value={direccionInput} 
+                  onChange={(e) => setDireccionInput(e.target.value)} 
+                />
               </div>
               <div className="input-row">
                 <div className="input-group">

@@ -6,26 +6,15 @@ import './Ventas.css';
 import './Reportes.css'; 
 
 function Reportes() {
-  // Estados para los filtros de fecha
-  const [fechaInicio, setFechaInicio] = useState('2026-09-01');
-  const [fechaFin, setFechaFin] = useState('2026-09-07');
-  
-  // Estados para los datos del reporte
-  const [estadisticas, setEstadisticas] = useState({
-    totalVentas: 0,
-    ingresos: 0,
-    ticketPromedio: 0,
-    ivaRecaudado: 0
-  });
+  const [ventas, setVentas] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [busqueda, setBusqueda] = useState('');
 
-  // Cargar reportes desde el Backend filtrando por fechas
   const cargarReportes = async () => {
     setCargando(true);
     try {
       const token = localStorage.getItem('token');
-      // Ajusta la ruta según el endpoint que haya creado Jonathan para reportes (ej. /api/ventas/reportes o /api/reportes)
-      const response = await fetch(`http://localhost:5000/api/ventas?inicio=${fechaInicio}&fin=${fechaFin}`, {
+      const response = await fetch('http://localhost:5000/api/ventas', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -35,23 +24,7 @@ function Reportes() {
 
       if (response.ok) {
         const data = await response.json();
-        
-        // Si tu backend devuelve un arreglo de ventas, calculamos los totales aquí de forma segura:
-        const ventasArray = Array.isArray(data) ? data : data.ventas || [];
-        
-        const totalVentas = ventasArray.length;
-        const ingresos = ventasArray.reduce((acc, v) => acc + Number(v.total || 0), 0);
-        const ticketPromedio = totalVentas > 0 ? ingresos / totalVentas : 0;
-        const ivaRecaudado = ingresos * 0.19; // Ajusta si el IVA se calcula diferente en tu proyecto
-
-        setEstadisticas({
-          totalVentas,
-          ingresos,
-          ticketPromedio,
-          ivaRecaudado
-        });
-      } else {
-        console.error("Error al obtener datos de ventas para reportes");
+        setVentas(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error("Error de conexión al cargar reportes:", error);
@@ -62,7 +35,18 @@ function Reportes() {
 
   useEffect(() => {
     cargarReportes();
-  }, [fechaInicio, fechaFin]); // Se recarga automáticamente si cambian las fechas
+  }, []);
+
+  // Cálculos dinámicos globales
+  const totalVentas = ventas.length;
+  const ingresos = ventas.reduce((acc, v) => acc + Number(v.total || 0), 0);
+  const ticketPromedio = totalVentas > 0 ? ingresos / totalVentas : 0;
+  const ivaRecaudado = ingresos * 0.19;
+
+  const ventasFiltradas = ventas.filter(v => 
+    (v.numero_factura && v.numero_factura.toLowerCase().includes(busqueda.toLowerCase())) ||
+    (v.metodo_pago && v.metodo_pago.toLowerCase().includes(busqueda.toLowerCase()))
+  );
 
   return (
     <div className="admin-container">
@@ -71,98 +55,79 @@ function Reportes() {
       <main className="main-content">
         <header className="top-header">
           <div>
-            <div className="breadcrumbs">Bizly / Reportes</div>
-            <h1>Reportes</h1>
-            <p className="subtitle">Análisis generado por el backend y exportación de datos</p>
+            <div className="breadcrumbs">Bizly / Reportes e Historial</div>
+            <h1>Reportes y Facturación</h1>
+            <p className="subtitle">Historial completo sincronizado con la base de datos</p>
           </div>
           <div className="header-actions">
-            <button className="btn-secondary">⭳ Exportar período</button>
+            <button className="btn-secondary" onClick={() => window.print()}>⭳ Imprimir Reporte</button>
             <div className="header-user" style={{marginLeft: '20px'}}>
-              <strong>Admin Bizly</strong>npm 
+              <strong>Samuel Torres</strong>
             </div>
           </div>
         </header>
 
-        {/* Barra de filtro de fechas */}
-        <div className="date-filter-bar">
-          <span className="date-label">Período:</span>
-          <input 
-            type="date" 
-            value={fechaInicio} 
-            onChange={(e) => setFechaInicio(e.target.value)} 
-            className="date-input" 
-          />
-          <span className="date-label">hasta</span>
-          <input 
-            type="date" 
-            value={fechaFin} 
-            onChange={(e) => setFechaFin(e.target.value)} 
-            className="date-input" 
-          />
-        </div>
-
         {/* 4 Tarjetas de resumen dinámicas */}
-        <div className="stats-grid">
+        <div className="stats-grid" style={{ marginBottom: '30px' }}>
           <div className="stat-card">
-            <div className="stat-title">Ventas del período</div>
-            <div className="stat-value">{cargando ? '...' : estadisticas.totalVentas}</div>
+            <div className="stat-title">Ventas Totales</div>
+            <div className="stat-value">{cargando ? '...' : totalVentas}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-title">Ingresos</div>
-            <div className="stat-value">$ {cargando ? '...' : estadisticas.ingresos.toLocaleString()}</div>
+            <div className="stat-title">Ingresos Totales</div>
+            <div className="stat-value">$ {cargando ? '...' : ingresos.toLocaleString()}</div>
           </div>
           <div className="stat-card">
             <div className="stat-title">Ticket promedio</div>
-            <div className="stat-value">$ {cargando ? '...' : Math.round(estadisticas.ticketPromedio).toLocaleString()}</div>
+            <div className="stat-value">$ {cargando ? '...' : Math.round(ticketPromedio).toLocaleString()}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-title">IVA recaudado</div>
-            <div className="stat-value">$ {cargando ? '...' : Math.round(estadisticas.ivaRecaudado).toLocaleString()}</div>
+            <div className="stat-title">IVA estimado (19%)</div>
+            <div className="stat-value">$ {cargando ? '...' : Math.round(ivaRecaudado).toLocaleString()}</div>
           </div>
         </div>
 
-        {/* Paneles de Gráficos */}
-        <div className="dashboard-panels" style={{ marginBottom: '20px' }}>
-          <div className="panel chart-panel">
-            <h3>TENDENCIA MENSUAL (6 MESES)</h3>
-            <div className="placeholder-content" style={{ height: '250px' }}>
-              <div className="chart-mockup">
-                <div className="y-axis">
-                  <span>$500k</span><span>$ 400k</span><span>$300k</span><span>$ 200k</span>
-                  <span>$100k</span><span>$ 50k</span><span>$10k</span><span>$ 0k</span>
-                </div>
-                <div className="x-axis">
-                  <span>abr de 26</span><span>may de 26</span><span>jun de 26</span>
-                  <span>jul de 26</span><span>ago de 26</span><span>sept de 26</span>
-                </div>
-              </div>
-            </div>
+        {/* Tabla Detallada de Facturas */}
+        <div className="panel table-panel" style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, color: '#1e293b' }}>HISTORIAL DE FACTURAS EMITIDAS</h3>
+            <input 
+              type="text" 
+              placeholder="Filtrar por factura o método..." 
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', width: '250px' }}
+            />
           </div>
-          <div className="panel list-panel">
-            <h3>MÉTODOS DE PAGO</h3>
-            <div className="placeholder-content" style={{ height: '250px', border: 'none' }}>
-              {cargando ? 'Cargando...' : 'Efectivo: 100%'}
-            </div>
-          </div>
-        </div>
 
-        {/* Tabla Inferior: Top Productos */}
-        <div className="panel table-panel">
-          <h3>TOP 5 PRODUCTOS POR INGRESOS</h3>
-          <table className="bizly-table">
+          <table className="bizly-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr>
-                <th>PRODUCTO</th>
-                <th>UNIDADES</th>
-                <th>INGRESOS</th>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b', fontSize: '13px' }}>
+                <th style={{ padding: '12px' }}>NO. FACTURA</th>
+                <th style={{ padding: '12px' }}>FECHA Y HORA</th>
+                <th style={{ padding: '12px' }}>MÉTODO DE PAGO</th>
+                <th style={{ padding: '12px', textAlign: 'right' }}>TOTAL</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan="3" className="empty-state" style={{ padding: '40px' }}>
-                  {cargando ? 'Cargando datos...' : 'Sin datos en el período'}
-                </td>
-              </tr>
+              {cargando ? (
+                <tr>
+                  <td colSpan="4" className="empty-state" style={{ padding: '40px', textAlign: 'center' }}>Cargando registros...</td>
+                </tr>
+              ) : ventasFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="empty-state" style={{ padding: '40px', textAlign: 'center' }}>No se encontraron facturas.</td>
+                </tr>
+              ) : (
+                ventasFiltradas.map((v) => (
+                  <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '12px', fontWeight: '600', color: '#2563eb' }}>{v.numero_factura || `FAC-${v.id}`}</td>
+                    <td style={{ padding: '12px', color: '#475569' }}>{new Date(v.created_at).toLocaleString()}</td>
+                    <td style={{ padding: '12px', color: '#475569', textTransform: 'capitalize' }}>{v.metodo_pago}</td>
+                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b' }}>$ {Number(v.total).toLocaleString()}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

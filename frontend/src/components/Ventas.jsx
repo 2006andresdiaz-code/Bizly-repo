@@ -1,12 +1,14 @@
 // src/components/Ventas.jsx
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { EmpresaContext } from '../context/EmpresaContext';
 import Sidebar from './Sidebar';
 import './Dashboard.css';
 import './Ventas.css';
 
 function Ventas() {
   const { usuario } = useContext(AuthContext);
+  const { nombreEmpresa } = useContext(EmpresaContext); // <-- Correctamente dentro del componente
 
   const [productos, setProductos] = useState([]);
   const [carrito, setCarrito] = useState([]);
@@ -68,7 +70,6 @@ function Ventas() {
   const procesarVenta = async () => {
     if (carrito.length === 0) return alert("El carrito está vacío.");
 
-    // AQUÍ ESTÁ EL CAMBIO CLAVE: id_usuario en lugar de id_vendedor
     const payload = {
       id_cliente: 1, 
       id_usuario: usuario?.id || 1,
@@ -91,7 +92,6 @@ function Ventas() {
       if (response.ok) {
         const resData = await response.json();
         setFacturaGenerada({
-          // Ajustado para leer el id_venta real que retorna el backend
           numero: resData.id_venta || Math.floor(Math.random() * 1000000),
           fecha: new Date().toLocaleString(),
           cajero: `${usuario?.nombre || 'Admin'} ${usuario?.apellido || ''}`,
@@ -103,7 +103,6 @@ function Ventas() {
         setCarrito([]); 
         obtenerProductos(); 
       } else {
-        // Manejo de errores detallado
         const errorData = await response.json().catch(() => ({}));
         alert(`Motivo del rechazo (Backend): ${errorData.error || errorData.mensaje || 'Datos incompletos'}`);
         console.error("Detalle del error del backend:", errorData);
@@ -219,7 +218,8 @@ function Ventas() {
           <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
             <div className="ticket-impresion" style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', width: '350px', color: '#000', fontFamily: 'monospace' }}>
               <div style={{ textAlign: 'center', borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px' }}>
-                <h2>OVER_SMART_PC</h2>
+                {/* AQUí SE REFLEJA EL NOMBRE DINÁMICO DE TU EMPRESA */}
+                <h2>{nombreEmpresa}</h2>
                 <p style={{ margin: '5px 0' }}>NIT: 900.123.456-7</p>
                 <p style={{ margin: '5px 0' }}>Factura de Venta No. {facturaGenerada.numero}</p>
                 <p style={{ margin: '5px 0' }}>Fecha: {facturaGenerada.fecha}</p>
