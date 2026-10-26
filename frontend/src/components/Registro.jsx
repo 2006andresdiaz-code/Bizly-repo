@@ -10,6 +10,8 @@ function Registro() {
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [rol, setRol] = useState("2"); // 2 = Vendedor por defecto
+  const [codigoAdmin, setCodigoAdmin] = useState(""); // Código secreto
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
   
   const navigate = useNavigate();
@@ -28,7 +30,6 @@ function Registro() {
     }
 
     try {
-      // CORREGIDO: Apuntando a '/api/auth/registro' tal como está en el backend de Jonathan
       const response = await fetch('http://localhost:5000/api/auth/registro', {
         method: 'POST',
         headers: {
@@ -38,7 +39,9 @@ function Registro() {
           nombre: nombre,
           apellido: apellido,
           email: correo,
-          password: password
+          password: password,
+          id_rol: rol, // Enviamos el rol seleccionado
+          codigo_admin: codigoAdmin // Enviamos el código secreto
         })
       });
 
@@ -46,7 +49,7 @@ function Registro() {
 
       if (response.ok) {
         alert("¡Cuenta creada exitosamente! Ahora puedes iniciar sesión.");
-        navigate('/'); // Redirige al login tras un registro exitoso
+        navigate('/'); 
       } else {
         alert(data.error || "Hubo un error al registrar el usuario");
       }
@@ -124,7 +127,36 @@ function Registro() {
             />
           </div>
 
-          <div className="checkbox-group">
+          {/* --- NUEVO: Selector de Rol --- */}
+          <div className="input-group">
+            <label>Rol en el sistema <span>*</span></label>
+            <select 
+              value={rol} 
+              onChange={(e) => setRol(e.target.value)}
+              style={{ width: '100%', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+            >
+              <option value="2">Vendedor</option>
+              <option value="1">Administrador</option>
+            </select>
+          </div>
+
+          {/* --- NUEVO: Cajita secreta de Administrador --- */}
+          {rol === '1' && (
+            <div className="input-group" style={{ backgroundColor: '#fef2f2', padding: '15px', borderRadius: '8px', border: '1px solid #fca5a5', marginTop: '5px' }}>
+              <label style={{ color: '#b91c1c' }}>Código de Autorización <span>*</span></label>
+              <input
+                type="password"
+                placeholder="Clave maestra de admin"
+                value={codigoAdmin}
+                onChange={(e) => setCodigoAdmin(e.target.value)}
+                required
+                style={{ borderColor: '#fca5a5' }}
+              />
+              <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#dc2626' }}>Requerido para cuentas administrativas.</p>
+            </div>
+          )}
+
+          <div className="checkbox-group" style={{ marginTop: '10px' }}>
             <input 
               type="checkbox" 
               id="terminos" 

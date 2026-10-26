@@ -15,9 +15,9 @@ import Ventas from './components/Ventas';
 import Inventario from './components/Inventario';
 import Reportes from './components/Reportes';
 import MiCuenta from './components/MiCuenta';
-import Devolucion from './components/Devolucion'; // Importación
+import Devolucion from './components/Devolucion';
 
-// 🔒 Componente Guardia de Seguridad
+// Componente Guardia de Seguridad
 const RutaProtegida = ({ children }) => {
   const { usuario, cargando } = useContext(AuthContext);
 

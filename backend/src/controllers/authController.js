@@ -1,4 +1,4 @@
-//src/controllers/authController.js
+// src/controllers/authController.js
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -18,10 +18,20 @@ exports.obtenerUsuarios = async (req, res) => {
 
 // --- REGISTRAR USUARIO (POST) ---
 exports.registrar = async (req, res) => {
-  const { nombre, apellido, email, password, id_rol } = req.body;
+  // 1. Extraemos los campos nuevos: id_rol y codigo_admin
+  const { nombre, apellido, email, password, id_rol, codigo_admin } = req.body;
 
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: 'Faltan campos obligatorios (nombre, email, password)' });
+  }
+
+  // 2. --- VALIDACIÓN DE SEGURIDAD PARA ADMINISTRADORES ---
+  if (String(id_rol) === '1') {
+    const CODIGO_SECRETO = 'BIZLY2026'; // Aquí defines tu clave maestra
+    
+    if (codigo_admin !== CODIGO_SECRETO) {
+      return res.status(403).json({ error: 'Código de administrador incorrecto. Acceso denegado.' });
+    }
   }
 
   try {

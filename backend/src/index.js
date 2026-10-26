@@ -9,6 +9,7 @@ const clienteRoutes = require('./routes/clienteRoutes');
 const productoRoutes = require('./routes/productoRoutes');
 const ventasRoutes = require('./routes/ventasRoutes');
 const auditoriaRoutes = require('./routes/auditoriaRoutes');
+const devolucionRoutes = require('./routes/devolucionRoutes'); // <-- 1. Ruta importada
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -22,7 +23,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/clientes', clienteRoutes);
 app.use('/api/productos', productoRoutes);
 app.use('/api/ventas', ventasRoutes);
-app.use('/api/auditoria', auditoriaRoutes); // <-- Colocado aquí abajo correctamente
+app.use('/api/auditoria', auditoriaRoutes);
+app.use('/api/devoluciones', devolucionRoutes); // <-- 2. Ruta registrada
 
 // Ruta de prueba general
 app.get('/', (req, res) => {
@@ -32,5 +34,4 @@ app.get('/', (req, res) => {
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
-  
 });

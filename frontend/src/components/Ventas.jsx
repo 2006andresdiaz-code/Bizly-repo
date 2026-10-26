@@ -6,7 +6,6 @@ import Sidebar from './Sidebar';
 import '../styles_components/Dashboard.css';
 import '../styles_components/Ventas.css';
 
-// Cliente por defecto cuando la venta es de mostrador (sin datos del comprador)
 const CLIENTE_GENERICO = {
   id: 1,
   nombre: 'Consumidor',
@@ -26,26 +25,18 @@ function Ventas() {
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [cargando, setCargando] = useState(true);
 
-  // --- Clientes ---
   const [clientes, setClientes] = useState([]);
   const [idCliente, setIdCliente] = useState(CLIENTE_GENERICO.id);
   const [buscaCliente, setBuscaCliente] = useState('');
 
   const [facturaGenerada, setFacturaGenerada] = useState(null);
 
-  // Devuelve el objeto completo del cliente elegido (o el genérico si no está en la lista)
-  const clienteActual =
-    clientes.find(c => String(c.id) === String(idCliente)) || CLIENTE_GENERICO;
+  const clienteActual = clientes.find(c => String(c.id) === String(idCliente)) || CLIENTE_GENERICO;
 
-  // Nombre legible del cliente, tolerante a distintos nombres de columna
   const nombreCliente = (c) =>
-    [c.nombre, c.apellido].filter(Boolean).join(' ').trim() ||
-    c.razon_social ||
-    c.nombre_completo ||
-    'Sin nombre';
+    [c.nombre, c.apellido].filter(Boolean).join(' ').trim() || c.razon_social || c.nombre_completo || 'Sin nombre';
 
-  const documentoCliente = (c) =>
-    c.documento || c.nit || c.cedula || c.identificacion || '';
+  const documentoCliente = (c) => c.documento || c.nit || c.cedula || c.identificacion || '';
 
   const obtenerProductos = async () => {
     try {
@@ -73,7 +64,6 @@ function Ventas() {
       if (response.ok) {
         const data = await response.json();
         const lista = Array.isArray(data) ? data : data.clientes || [];
-        // Garantiza que siempre exista la opción de mostrador
         const tieneGenerico = lista.some(c => String(c.id) === String(CLIENTE_GENERICO.id));
         setClientes(tieneGenerico ? lista : [CLIENTE_GENERICO, ...lista]);
       } else {
@@ -89,6 +79,22 @@ function Ventas() {
     obtenerProductos();
     obtenerClientes();
   }, []);
+
+  const handleBuscarCliente = (e) => {
+    const texto = e.target.value;
+    setBuscaCliente(texto);
+
+    const filtrados = clientes.filter(c => {
+      const busquedaTexto = `${nombreCliente(c)} ${documentoCliente(c)}`.toLowerCase();
+      return busquedaTexto.includes(texto.toLowerCase());
+    });
+
+    if (filtrados.length > 0) {
+      setIdCliente(filtrados[0].id);
+    } else {
+      setIdCliente(''); 
+    }
+  };
 
   const clientesFiltrados = clientes.filter(c => {
     const texto = `${nombreCliente(c)} ${documentoCliente(c)}`.toLowerCase();
@@ -148,8 +154,13 @@ function Ventas() {
 
       if (response.ok) {
         const resData = await response.json();
+        
+        const numeroFactura = resData.id_venta 
+          ? String(resData.id_venta).padStart(6, '0') 
+          : String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+
         setFacturaGenerada({
-          numero: resData.id_venta || Math.floor(Math.random() * 1000000),
+          numero: numeroFactura,
           fecha: new Date().toLocaleString(),
           cajero: `${usuario?.nombre || 'Admin'} ${usuario?.apellido || ''}`,
           cliente: {
@@ -170,16 +181,11 @@ function Ventas() {
       } else {
         const errorData = await response.json().catch(() => ({}));
         alert(`Motivo del rechazo (Backend): ${errorData.error || errorData.mensaje || 'Datos incompletos'}`);
-        console.error("Detalle del error del backend:", errorData);
       }
     } catch (error) {
       console.error("Error de conexión:", error);
       alert("No se pudo conectar con el servidor.");
     }
-  };
-
-  const imprimirFactura = () => {
-    window.print();
   };
 
   const productosFiltrados = Array.isArray(productos) ? productos.filter(p =>
@@ -235,7 +241,6 @@ function Ventas() {
           <h3 style={{ margin: '0 0 15px 0' }}>Resumen de Venta</h3>
           <hr style={{ border: 'none', borderBottom: '1px solid #e2e8f0', margin: '0 0 15px 0' }} />
 
-          {/* --- Selección de cliente --- */}
           <div style={{ marginBottom: '15px' }}>
             <label style={{ display: 'block', fontSize: '0.85em', color: '#64748b', marginBottom: '6px' }}>
               Cliente de esta venta
@@ -247,7 +252,8 @@ function Ventas() {
                 className="search-input"
                 placeholder="Buscar por nombre o documento..."
                 value={buscaCliente}
-                onChange={(e) => setBuscaCliente(e.target.value)}
+                onChange={handleBuscarCliente}
+                onKeyDown={(e) => { if(e.key === 'Enter') e.preventDefault(); }} 
                 style={{ width: '100%', marginBottom: '8px', padding: '8px' }}
               />
             )}
@@ -329,7 +335,6 @@ function Ventas() {
                 <p style={{ margin: '5px 0' }}>Cajero: {facturaGenerada.cajero}</p>
               </div>
 
-              {/* --- Datos del cliente en la factura --- */}
               <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px', fontSize: '0.9em' }}>
                 <p style={{ margin: '3px 0' }}>Cliente: {facturaGenerada.cliente.nombre}</p>
                 {facturaGenerada.cliente.documento && (
@@ -344,20 +349,23 @@ function Ventas() {
               </div>
 
               <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px' }}>
-                <table style={{ width: '100%', textAlign: 'left', fontSize: '0.9em' }}>
+                <table style={{ width: '100%', textAlign: 'left', fontSize: '0.9em', tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
-                      <th>Cant.</th>
-                      <th>Producto</th>
-                      <th style={{ textAlign: 'right' }}>Total</th>
+                      <th style={{ width: '15%' }}>Cant.</th>
+                      <th style={{ width: '60%' }}>Producto</th>
+                      <th style={{ width: '25%', textAlign: 'right' }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {facturaGenerada.items.map((item, idx) => (
                       <tr key={idx}>
-                        <td>{item.cantidad}</td>
-                        <td>{item.nombre.length > 15 ? `${item.nombre.substring(0, 15)}...` : item.nombre}</td>
-                        <td style={{ textAlign: 'right' }}>$ {(item.cantidad * item.precio_venta).toLocaleString()}</td>
+                        <td style={{ verticalAlign: 'top' }}>{item.cantidad}</td>
+                        {/* AQUÍ ESTÁ EL CAMBIO PARA QUE SE MUESTRE COMPLETO Y BAJE DE LÍNEA */}
+                        <td style={{ wordBreak: 'break-word', paddingRight: '10px' }}>
+                          {item.nombre}
+                        </td>
+                        <td style={{ textAlign: 'right', verticalAlign: 'top' }}>$ {(item.cantidad * item.precio_venta).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -370,7 +378,7 @@ function Ventas() {
               </div>
 
               <div className="no-print" style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={imprimirFactura} style={{ flex: 1, padding: '10px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>🖨️ Imprimir</button>
+                <button onClick={() => window.print()} style={{ flex: 1, padding: '10px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>🖨️ Imprimir</button>
                 <button onClick={() => setFacturaGenerada(null)} style={{ flex: 1, padding: '10px', backgroundColor: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Cerrar</button>
               </div>
             </div>

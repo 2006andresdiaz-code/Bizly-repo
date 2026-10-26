@@ -8,4 +8,7 @@ const { verificarToken } = require('../middlewares/authMiddleware');
 router.post('/', verificarToken, ventasController.crearVenta);
 router.get('/', verificarToken, ventasController.obtenerVentas);
 
+// Nueva ruta para devoluciones (Sin verificarToken para que funcione directo con tu componente Devolucion.jsx)
+router.get('/:id/productos', ventasController.obtenerProductosPorFactura);
+
 module.exports = router;
