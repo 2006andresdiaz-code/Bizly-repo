@@ -1,9 +1,9 @@
 // src/components/Auditoria.jsx
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
-import './Dashboard.css'; 
-import './Ventas.css'; 
-import './Auditoria.css'; 
+import '../styles_components/Dashboard.css'; 
+import '../styles_components/Ventas.css'; 
+import '../styles_components/Auditoria.css'; 
 
 function Auditoria() {
   const [registros, setRegistros] = useState([]);

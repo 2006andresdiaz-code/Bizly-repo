@@ -3,20 +3,49 @@ import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { EmpresaContext } from '../context/EmpresaContext';
 import Sidebar from './Sidebar';
-import './Dashboard.css';
-import './Ventas.css';
+import '../styles_components/Dashboard.css';
+import '../styles_components/Ventas.css';
+
+// Cliente por defecto cuando la venta es de mostrador (sin datos del comprador)
+const CLIENTE_GENERICO = {
+  id: 1,
+  nombre: 'Consumidor',
+  apellido: 'Final',
+  documento: '222222222222',
+  telefono: '',
+  direccion: ''
+};
 
 function Ventas() {
   const { usuario } = useContext(AuthContext);
-  const { nombreEmpresa } = useContext(EmpresaContext); // <-- Correctamente dentro del componente
+  const { nombreEmpresa } = useContext(EmpresaContext);
 
   const [productos, setProductos] = useState([]);
   const [carrito, setCarrito] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [cargando, setCargando] = useState(true);
-  
+
+  // --- Clientes ---
+  const [clientes, setClientes] = useState([]);
+  const [idCliente, setIdCliente] = useState(CLIENTE_GENERICO.id);
+  const [buscaCliente, setBuscaCliente] = useState('');
+
   const [facturaGenerada, setFacturaGenerada] = useState(null);
+
+  // Devuelve el objeto completo del cliente elegido (o el genérico si no está en la lista)
+  const clienteActual =
+    clientes.find(c => String(c.id) === String(idCliente)) || CLIENTE_GENERICO;
+
+  // Nombre legible del cliente, tolerante a distintos nombres de columna
+  const nombreCliente = (c) =>
+    [c.nombre, c.apellido].filter(Boolean).join(' ').trim() ||
+    c.razon_social ||
+    c.nombre_completo ||
+    'Sin nombre';
+
+  const documentoCliente = (c) =>
+    c.documento || c.nit || c.cedula || c.identificacion || '';
 
   const obtenerProductos = async () => {
     try {
@@ -35,9 +64,36 @@ function Ventas() {
     }
   };
 
+  const obtenerClientes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/clientes', {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const lista = Array.isArray(data) ? data : data.clientes || [];
+        // Garantiza que siempre exista la opción de mostrador
+        const tieneGenerico = lista.some(c => String(c.id) === String(CLIENTE_GENERICO.id));
+        setClientes(tieneGenerico ? lista : [CLIENTE_GENERICO, ...lista]);
+      } else {
+        setClientes([CLIENTE_GENERICO]);
+      }
+    } catch (error) {
+      console.error('Error al cargar clientes:', error);
+      setClientes([CLIENTE_GENERICO]);
+    }
+  };
+
   useEffect(() => {
     obtenerProductos();
+    obtenerClientes();
   }, []);
+
+  const clientesFiltrados = clientes.filter(c => {
+    const texto = `${nombreCliente(c)} ${documentoCliente(c)}`.toLowerCase();
+    return texto.includes(buscaCliente.toLowerCase());
+  });
 
   const agregarAlCarrito = (producto) => {
     if (producto.stock_actual <= 0) {
@@ -69,9 +125,10 @@ function Ventas() {
 
   const procesarVenta = async () => {
     if (carrito.length === 0) return alert("El carrito está vacío.");
+    if (!idCliente) return alert("Elige un cliente antes de cobrar.");
 
     const payload = {
-      id_cliente: 1, 
+      id_cliente: Number(idCliente),
       id_usuario: usuario?.id || 1,
       total: totalVenta,
       metodo_pago: metodoPago,
@@ -82,7 +139,7 @@ function Ventas() {
       const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:5000/api/ventas', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : ''
         },
@@ -95,13 +152,21 @@ function Ventas() {
           numero: resData.id_venta || Math.floor(Math.random() * 1000000),
           fecha: new Date().toLocaleString(),
           cajero: `${usuario?.nombre || 'Admin'} ${usuario?.apellido || ''}`,
+          cliente: {
+            nombre: nombreCliente(clienteActual),
+            documento: documentoCliente(clienteActual),
+            telefono: clienteActual.telefono || '',
+            direccion: clienteActual.direccion || ''
+          },
           items: [...carrito],
           total: totalVenta,
           metodo: metodoPago
         });
-        
-        setCarrito([]); 
-        obtenerProductos(); 
+
+        setCarrito([]);
+        setIdCliente(CLIENTE_GENERICO.id);
+        setBuscaCliente('');
+        obtenerProductos();
       } else {
         const errorData = await response.json().catch(() => ({}));
         alert(`Motivo del rechazo (Backend): ${errorData.error || errorData.mensaje || 'Datos incompletos'}`);
@@ -126,7 +191,7 @@ function Ventas() {
     <div className="admin-container">
       <Sidebar />
       <main className="main-content" style={{ display: 'flex', gap: '20px', position: 'relative' }}>
-        
+
         {/* Catálogo de Productos */}
         <div style={{ flex: 2 }}>
           <header className="top-header">
@@ -168,8 +233,47 @@ function Ventas() {
         {/* Carrito */}
         <div className="cart-panel" style={{ flex: 1, backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', height: 'fit-content' }}>
           <h3 style={{ margin: '0 0 15px 0' }}>Resumen de Venta</h3>
-          <hr style={{ border: 'none', borderBottom: '1px solid #e2e8f0', margin: '0 0 15px 0' }}/>
-          
+          <hr style={{ border: 'none', borderBottom: '1px solid #e2e8f0', margin: '0 0 15px 0' }} />
+
+          {/* --- Selección de cliente --- */}
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', fontSize: '0.85em', color: '#64748b', marginBottom: '6px' }}>
+              Cliente de esta venta
+            </label>
+
+            {clientes.length > 8 && (
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Buscar por nombre o documento..."
+                value={buscaCliente}
+                onChange={(e) => setBuscaCliente(e.target.value)}
+                style={{ width: '100%', marginBottom: '8px', padding: '8px' }}
+              />
+            )}
+
+            <select
+              className="filter-select"
+              value={idCliente}
+              onChange={(e) => setIdCliente(e.target.value)}
+              style={{ width: '100%' }}
+            >
+              {clientesFiltrados.length === 0 && <option value="">Sin resultados</option>}
+              {clientesFiltrados.map(c => (
+                <option key={c.id} value={c.id}>
+                  {nombreCliente(c)}{documentoCliente(c) ? ` — ${documentoCliente(c)}` : ''}
+                </option>
+              ))}
+            </select>
+
+            <div style={{ fontSize: '0.8em', color: '#475569', marginTop: '6px' }}>
+              Se facturará a <strong>{nombreCliente(clienteActual)}</strong>
+              {documentoCliente(clienteActual) ? ` (${documentoCliente(clienteActual)})` : ''}
+            </div>
+          </div>
+
+          <hr style={{ border: 'none', borderBottom: '1px solid #e2e8f0', margin: '0 0 15px 0' }} />
+
           {carrito.length === 0 ? (
             <p style={{ textAlign: 'center', margin: '40px 0', color: '#888' }}>El carrito está vacío.</p>
           ) : (
@@ -192,20 +296,20 @@ function Ventas() {
                   </div>
                 ))}
               </div>
-              
-              <hr style={{ border: 'none', borderBottom: '1px solid #e2e8f0', margin: '15px 0' }}/>
-              
+
+              <hr style={{ border: 'none', borderBottom: '1px solid #e2e8f0', margin: '15px 0' }} />
+
               <select className="filter-select" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value)} style={{ width: '100%', marginBottom: '15px' }}>
                 <option value="Efectivo">Efectivo</option>
                 <option value="Tarjeta">Tarjeta Débito/Crédito</option>
                 <option value="Nequi/Daviplata">Transferencia (Nequi/Daviplata)</option>
               </select>
-              
+
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2em', fontWeight: 'bold', marginBottom: '20px' }}>
                 <span>TOTAL:</span>
                 <span style={{ color: '#2563eb' }}>$ {totalVenta.toLocaleString()}</span>
               </div>
-              
+
               <button onClick={procesarVenta} className="btn-primary" style={{ width: '100%', padding: '14px', fontSize: '1.05em' }}>
                 💳 Registrar y Cobrar
               </button>
@@ -218,14 +322,27 @@ function Ventas() {
           <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
             <div className="ticket-impresion" style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', width: '350px', color: '#000', fontFamily: 'monospace' }}>
               <div style={{ textAlign: 'center', borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px' }}>
-                {/* AQUí SE REFLEJA EL NOMBRE DINÁMICO DE TU EMPRESA */}
                 <h2>{nombreEmpresa}</h2>
                 <p style={{ margin: '5px 0' }}>NIT: 900.123.456-7</p>
                 <p style={{ margin: '5px 0' }}>Factura de Venta No. {facturaGenerada.numero}</p>
                 <p style={{ margin: '5px 0' }}>Fecha: {facturaGenerada.fecha}</p>
                 <p style={{ margin: '5px 0' }}>Cajero: {facturaGenerada.cajero}</p>
               </div>
-              
+
+              {/* --- Datos del cliente en la factura --- */}
+              <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px', fontSize: '0.9em' }}>
+                <p style={{ margin: '3px 0' }}>Cliente: {facturaGenerada.cliente.nombre}</p>
+                {facturaGenerada.cliente.documento && (
+                  <p style={{ margin: '3px 0' }}>Doc: {facturaGenerada.cliente.documento}</p>
+                )}
+                {facturaGenerada.cliente.telefono && (
+                  <p style={{ margin: '3px 0' }}>Tel: {facturaGenerada.cliente.telefono}</p>
+                )}
+                {facturaGenerada.cliente.direccion && (
+                  <p style={{ margin: '3px 0' }}>Dir: {facturaGenerada.cliente.direccion}</p>
+                )}
+              </div>
+
               <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px' }}>
                 <table style={{ width: '100%', textAlign: 'left', fontSize: '0.9em' }}>
                   <thead>
@@ -239,7 +356,7 @@ function Ventas() {
                     {facturaGenerada.items.map((item, idx) => (
                       <tr key={idx}>
                         <td>{item.cantidad}</td>
-                        <td>{item.nombre.substring(0, 15)}...</td>
+                        <td>{item.nombre.length > 15 ? `${item.nombre.substring(0, 15)}...` : item.nombre}</td>
                         <td style={{ textAlign: 'right' }}>$ {(item.cantidad * item.precio_venta).toLocaleString()}</td>
                       </tr>
                     ))}

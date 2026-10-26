@@ -333,3 +333,9 @@
 .modal-footer .btn-primary:hover {
   background-color: #22c55e !important;
 }
+
+.main-content {
+  flex: 1; /* Toma todo el espacio derecho disponible */
+  padding: 30px 40px;
+  box-sizing: border-box;
+}

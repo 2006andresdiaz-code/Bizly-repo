@@ -2,8 +2,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import Sidebar from './Sidebar';
-
-import './Inventario.css'; 
+import '../styles_components/Inventario.css'; 
 
 function Inventario() {
   const { usuario } = useContext(AuthContext);

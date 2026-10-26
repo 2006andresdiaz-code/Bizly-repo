@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import './Dashboard.css';
+import '../styles_components/Dashboard.css';
 
 function Dashboard() {
   const navigate = useNavigate();

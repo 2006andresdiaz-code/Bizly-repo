@@ -5,7 +5,7 @@ import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import './Login.css';
+import '../styles_components/Login.css';
 import logoBizly from '../assets/logo-bizly.png'; 
 
 function Login() {

@@ -27,11 +27,10 @@ function Sidebar() {
         </div>
       </div>
 
-      <div className="sidebar-badge">Plan Business</div>
-
       <nav className="sidebar-nav">
         <Link to="/dashboard" className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}>Dashboard</Link>
         <Link to="/ventas" className={`nav-item ${location.pathname === '/ventas' ? 'active' : ''}`}>Ventas</Link>
+        <Link to="/devoluciones" className={`nav-item ${location.pathname === '/devoluciones' ? 'active' : ''}`}>Devoluciones</Link>
         <Link to="/inventario" className={`nav-item ${location.pathname === '/inventario' ? 'active' : ''}`}>Inventario</Link>
         <Link to="/clientes" className={`nav-item ${location.pathname === '/clientes' ? 'active' : ''}`}>Clientes</Link>
         <Link to="/reportes" className={`nav-item ${location.pathname === '/reportes' ? 'active' : ''}`}>Reportes</Link>        

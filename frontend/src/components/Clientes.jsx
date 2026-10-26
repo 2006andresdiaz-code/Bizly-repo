@@ -1,22 +1,38 @@
 // src/components/Clientes.jsx
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
-import './Dashboard.css'; 
-import './Ventas.css'; 
-import './Inventario.css'; 
-import './Clientes.css'; 
+import '../styles_components/Dashboard.css';
+import '../styles_components/Ventas.css';
+import '../styles_components/Inventario.css';
+import '../styles_components/Clientes.css';
+
+const CLIENTE_VACIO = {
+  id: null,
+  nombre: '',
+  apellido: '',
+  documento: '',
+  tipo_documento: 'CC',
+  telefono: '',
+  email: ''
+};
 
 function Clientes() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [clientes, setClientes] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [verInactivos, setVerInactivos] = useState(false);
 
-  // Cargar clientes desde el Backend al iniciar el componente con autenticación por Token
-  useEffect(() => {
-    const token = localStorage.getItem('token'); // Recupera el token guardado en el login
+  // Datos del formulario (sirve tanto para crear como para editar)
+  const [form, setForm] = useState(CLIENTE_VACIO);
+  const editando = Boolean(form.id);
 
-    fetch('http://localhost:5000/api/clientes', {
+  const obtenerClientes = () => {
+    const token = localStorage.getItem('token');
+    const parametro = verInactivos ? '?activo=0' : '?activo=1';
+
+    return fetch(`http://localhost:5000/api/clientes${parametro}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -30,16 +46,18 @@ function Clientes() {
         return res.json();
       })
       .then(data => {
-        // Aseguramos que data sea un arreglo antes de pasarlo al estado
         setClientes(Array.isArray(data) ? data : data.clientes || []);
-        setLoading(false);
       })
       .catch(err => {
         console.error("Error al cargar clientes:", err);
-        setClientes([]); // Evita que quede en undefined o texto plano
-        setLoading(false);
+        setClientes([]);
       });
-  }, []);
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    obtenerClientes().finally(() => setLoading(false));
+  }, [verInactivos]);
 
   // Filtrar clientes según el buscador de forma segura
   const clientesFiltrados = Array.isArray(clientes) ? clientes.filter(cliente => {
@@ -52,17 +70,135 @@ function Clientes() {
     );
   }) : [];
 
-  const confirmarDesactivacion = (nombreCliente) => {
-    const confirmar = window.confirm(`¿Desactivar al cliente "${nombreCliente}"? Sus ventas históricas se conservarán.`);
-    if (confirmar) {
-      console.log(`Cliente ${nombreCliente} desactivado.`);
+  const abrirModalNuevo = () => {
+    setForm(CLIENTE_VACIO);
+    setModalAbierto(true);
+  };
+
+  const abrirModalEditar = (cliente) => {
+    setForm({
+      id: cliente.id || cliente.id_cliente,
+      nombre: cliente.nombre || '',
+      apellido: cliente.apellido || '',
+      documento: cliente.documento || '',
+      tipo_documento: cliente.tipo_documento || 'CC',
+      telefono: cliente.telefono || '',
+      email: cliente.email || ''
+    });
+    setModalAbierto(true);
+  };
+
+  const actualizarCampo = (campo, valor) => {
+    setForm(prev => ({ ...prev, [campo]: valor }));
+  };
+
+  const guardarCliente = async (e) => {
+    e.preventDefault();
+
+    if (!form.nombre.trim()) {
+      alert('El nombre es obligatorio.');
+      return;
+    }
+
+    setGuardando(true);
+    const token = localStorage.getItem('token');
+    const esEdicion = Boolean(form.id);
+    const url = esEdicion
+      ? `http://localhost:5000/api/clientes/${form.id}`
+      : 'http://localhost:5000/api/clientes';
+
+    const payload = {
+      nombre: form.nombre,
+      apellido: form.apellido,
+      documento: form.documento,
+      tipo_documento: form.tipo_documento,
+      telefono: form.telefono,
+      email: form.email
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: esEdicion ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        await obtenerClientes();
+        setModalAbierto(false);
+        setForm(CLIENTE_VACIO);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`No se pudo guardar el cliente: ${errorData.error || errorData.mensaje || 'Datos inválidos'}`);
+        console.error("Detalle del error del backend:", errorData);
+      }
+    } catch (error) {
+      console.error("Error de conexión:", error);
+      alert("No se pudo conectar con el servidor.");
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const confirmarDesactivacion = async (cliente) => {
+    const id = cliente.id || cliente.id_cliente;
+    const confirmar = window.confirm(`¿Desactivar al cliente "${cliente.nombre}"? Sus ventas históricas se conservarán.`);
+    if (!confirmar) return;
+
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/clientes/${id}/desactivar`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+
+      if (response.ok) {
+        await obtenerClientes();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`No se pudo desactivar: ${errorData.error || errorData.mensaje || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error("Error de conexión:", error);
+      alert("No se pudo conectar con el servidor.");
+    }
+  };
+
+  const reactivarCliente = async (cliente) => {
+    const id = cliente.id || cliente.id_cliente;
+    const confirmar = window.confirm(`¿Reactivar al cliente "${cliente.nombre}"?`);
+    if (!confirmar) return;
+
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/clientes/${id}/reactivar`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
+
+      if (response.ok) {
+        await obtenerClientes();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`No se pudo reactivar: ${errorData.error || errorData.mensaje || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error("Error de conexión:", error);
+      alert("No se pudo conectar con el servidor.");
     }
   };
 
   return (
     <div className="admin-container">
       <Sidebar />
-      
+
       <main className="main-content">
         <header className="top-header">
           <div>
@@ -71,10 +207,17 @@ function Clientes() {
             <p className="subtitle">{clientes.length} registrados</p>
           </div>
           <div className="header-actions">
-            <button className="btn-primary" onClick={() => setModalAbierto(true)}>
+            <button
+              className="btn-secondary"
+              onClick={() => setVerInactivos(prev => !prev)}
+              style={{ marginRight: '10px' }}
+            >
+              {verInactivos ? '← Ver clientes activos' : 'Ver clientes desactivados'}
+            </button>
+            <button className="btn-primary" onClick={abrirModalNuevo}>
               + Nuevo cliente
             </button>
-            <div className="header-user" style={{marginLeft: '20px'}}>
+            <div className="header-user" style={{ marginLeft: '20px' }}>
               <strong>Admin Bizly</strong>
             </div>
           </div>
@@ -84,9 +227,9 @@ function Clientes() {
         <div className="action-bar">
           <div className="search-container">
             <span className="search-icon">🔍</span>
-            <input 
-              type="text" 
-              placeholder="Buscar por nombre, documento, teléfono o email..." 
+            <input
+              type="text"
+              placeholder="Buscar por nombre, documento, teléfono o email..."
               className="search-input"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
@@ -99,12 +242,11 @@ function Clientes() {
           {loading ? (
             <p>Cargando clientes desde la base de datos...</p>
           ) : clientesFiltrados.length === 0 ? (
-            <p>No se encontraron clientes registrados o la sesión requiere reautenticación.</p>
+            <p>{verInactivos ? 'No hay clientes desactivados.' : 'No se encontraron clientes registrados o la sesión requiere reautenticación.'}</p>
           ) : (
             clientesFiltrados.map((cliente) => {
-              // Generar iniciales para el Avatar
               const iniciales = cliente.nombre ? cliente.nombre.substring(0, 2).toUpperCase() : 'CL';
-              
+
               return (
                 <div className="product-card client-card" key={cliente.id || cliente.id_cliente}>
                   <div className="client-header">
@@ -125,13 +267,21 @@ function Clientes() {
                     </div>
                   </div>
                   <div className="product-actions">
-                    <button className="btn-action" onClick={() => setModalAbierto(true)}>✎ Editar</button>
-                    <button 
-                      className="btn-action danger" 
-                      onClick={() => confirmarDesactivacion(cliente.nombre)}
-                    >
-                      🗑 Desactivar
-                    </button>
+                    {verInactivos ? (
+                      <button className="btn-action" onClick={() => reactivarCliente(cliente)}>
+                        ↺ Reactivar
+                      </button>
+                    ) : (
+                      <>
+                        <button className="btn-action" onClick={() => abrirModalEditar(cliente)}>✎ Editar</button>
+                        <button
+                          className="btn-action danger"
+                          onClick={() => confirmarDesactivacion(cliente)}
+                        >
+                          🗑 Desactivar
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               );
@@ -145,24 +295,48 @@ function Clientes() {
         <div className="modal-overlay">
           <div className="modal-content" style={{ width: '450px' }}>
             <div className="modal-header">
-              <h2>Nuevo cliente</h2>
+              <h2>{editando ? 'Editar cliente' : 'Nuevo cliente'}</h2>
               <button className="close-btn" onClick={() => setModalAbierto(false)}>✕</button>
             </div>
-            
-            <form className="modal-body" onSubmit={(e) => { e.preventDefault(); setModalAbierto(false); }}>
+
+            <form className="modal-body" onSubmit={guardarCliente}>
               <div className="input-group">
-                <label>Nombre completo <span>*</span></label>
-                <input type="text" placeholder="Ej. Carlos Pérez" required />
+                <label>Nombre <span>*</span></label>
+                <input
+                  type="text"
+                  placeholder="Ej. Carlos"
+                  value={form.nombre}
+                  onChange={(e) => actualizarCampo('nombre', e.target.value)}
+                  required
+                />
               </div>
-              
+
+              <div className="input-group">
+                <label>Apellido</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Pérez"
+                  value={form.apellido}
+                  onChange={(e) => actualizarCampo('apellido', e.target.value)}
+                />
+              </div>
+
               <div className="input-row">
                 <div className="input-group">
                   <label>Documento</label>
-                  <input type="text" placeholder="Ej. 10203040" />
+                  <input
+                    type="text"
+                    placeholder="Ej. 10203040"
+                    value={form.documento}
+                    onChange={(e) => actualizarCampo('documento', e.target.value)}
+                  />
                 </div>
                 <div className="input-group">
                   <label>Tipo</label>
-                  <select defaultValue="CC">
+                  <select
+                    value={form.tipo_documento}
+                    onChange={(e) => actualizarCampo('tipo_documento', e.target.value)}
+                  >
                     <option value="CC">CC</option>
                     <option value="CE">CE</option>
                     <option value="NIT">NIT</option>
@@ -174,17 +348,29 @@ function Clientes() {
               <div className="input-row">
                 <div className="input-group">
                   <label>Teléfono</label>
-                  <input type="text" placeholder="Ej. 3101234567" />
+                  <input
+                    type="text"
+                    placeholder="Ej. 3101234567"
+                    value={form.telefono}
+                    onChange={(e) => actualizarCampo('telefono', e.target.value)}
+                  />
                 </div>
                 <div className="input-group">
                   <label>Email</label>
-                  <input type="email" placeholder="correo@example.com" />
+                  <input
+                    type="email"
+                    placeholder="correo@example.com"
+                    value={form.email}
+                    onChange={(e) => actualizarCampo('email', e.target.value)}
+                  />
                 </div>
               </div>
 
               <div className="modal-footer" style={{ borderTop: 'none', padding: '10px 0 0' }}>
                 <button type="button" className="btn-secondary" onClick={() => setModalAbierto(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary" style={{ backgroundColor: '#624bff' }}>Guardar</button>
+                <button type="submit" className="btn-primary" style={{ backgroundColor: '#624bff' }} disabled={guardando}>
+                  {guardando ? 'Guardando...' : 'Guardar'}
+                </button>
               </div>
             </form>
           </div>

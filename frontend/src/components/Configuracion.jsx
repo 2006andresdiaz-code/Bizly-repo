@@ -1,10 +1,10 @@
 // src/components/Configuracion.jsx
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import Sidebar from './Sidebar';
 import { EmpresaContext } from '../context/EmpresaContext';
-import './Dashboard.css';
-import './Ventas.css'; // Reutilizamos estilos de tabla
-import './Configuracion.css';
+import '../styles_components/Dashboard.css';
+import '../styles_components/Ventas.css'; // Reutilizamos estilos de tabla
+import '../styles_components/Configuracion.css';
 
 function Configuracion() {
   const [tabActiva, setTabActiva] = useState('empresa');

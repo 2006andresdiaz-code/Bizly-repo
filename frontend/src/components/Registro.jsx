@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom"; 
 import logoBizly from '../assets/logo-bizly.png';
-import './Login.css'; 
+import '../styles_components/Login.css'; 
 
 function Registro() {
   const [nombre, setNombre] = useState("");

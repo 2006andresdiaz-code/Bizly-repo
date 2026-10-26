@@ -3,8 +3,8 @@ import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import React from 'react';
 import Sidebar from './Sidebar';
-import './Dashboard.css'; 
-import './MiCuenta.css'; // Estilos específicos para esta vista
+import '../styles_components/Dashboard.css';
+import '../styles_components/MiCuenta.css'; // Estilos específicos para esta vista
 
 function MiCuenta() {
   // 1. Aquí "extraemos" al usuario de nuestra caja fuerte (Contexto)

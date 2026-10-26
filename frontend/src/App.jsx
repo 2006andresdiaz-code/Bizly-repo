@@ -15,6 +15,7 @@ import Ventas from './components/Ventas';
 import Inventario from './components/Inventario';
 import Reportes from './components/Reportes';
 import MiCuenta from './components/MiCuenta';
+import Devolucion from './components/Devolucion'; // Importación
 
 // 🔒 Componente Guardia de Seguridad
 const RutaProtegida = ({ children }) => {
@@ -25,7 +26,6 @@ const RutaProtegida = ({ children }) => {
   }
 
   if (!usuario) {
-    // Si no está logueado, lo patea al Login
     return <Navigate to="/" replace />;
   }
 
@@ -52,6 +52,9 @@ function App() {
             <Route path="/auditoria" element={<RutaProtegida><Auditoria /></RutaProtegida>} />
             <Route path="/configuracion" element={<RutaProtegida><Configuracion /></RutaProtegida>} />
             <Route path="/micuenta" element={<RutaProtegida><MiCuenta /></RutaProtegida>} />
+            
+            {/* ⬇️ Aquí usas la variable Devolucion para que desaparezca la advertencia ⬇️ */}
+            <Route path="/devoluciones" element={<RutaProtegida><Devolucion /></RutaProtegida>} />
           </Routes>
         </BrowserRouter>
       </EmpresaProvider>

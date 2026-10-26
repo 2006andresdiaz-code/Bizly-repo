@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import logoBizly from '../assets/logo-bizly.png';
-import './Login.css';
+import '../styles_components/Login.css';
 
 function RecuperarPassword() {
   const [correo, setCorreo] = useState("");

@@ -1,9 +1,9 @@
 // src/components/Reportes.jsx
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
-import './Dashboard.css'; 
-import './Ventas.css'; 
-import './Reportes.css'; 
+import '../styles_components/Dashboard.css'; 
+import '../styles_components/Ventas.css'; 
+import '../styles_components/Reportes.css'; 
 
 function Reportes() {
   const [ventas, setVentas] = useState([]);
