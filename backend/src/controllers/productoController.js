@@ -1,79 +1,121 @@
 // src/controllers/productoController.js
 const db = require('../config/db');
 
-// Función para obtener todos los productos activos
+// Obtener todos los productos
 exports.obtenerProductos = async (req, res) => {
   try {
-    const [productos] = await db.query('SELECT * FROM productos WHERE activo = 1');
-    res.json(productos);
+    const [rows] = await db.query(`
+      SELECT p.*, c.nombre AS categoria, pr.nombre AS proveedor
+      FROM productos p
+      LEFT JOIN categorias c ON p.id_categoria = c.id
+      LEFT JOIN proveedores pr ON p.id_proveedor = pr.id
+      WHERE p.activo = 1
+      ORDER BY p.id DESC
+    `);
+
+    // Parsear la ficha técnica de JSON a Objeto para el frontend
+    const productosFormateados = rows.map(prod => ({
+      ...prod,
+      ficha_tecnica: typeof prod.ficha_tecnica === 'string'
+        ? JSON.parse(prod.ficha_tecnica)
+        : prod.ficha_tecnica || {}
+    }));
+
+    res.json(productosFormateados);
   } catch (error) {
-    console.error('Error al obtener el inventario:', error);
-    res.status(500).json({ error: 'Error de servidor al cargar productos', detalle: error.message });
+    console.error('Error al obtener productos:', error);
+    res.status(500).json({ error: 'Error interno del servidor al obtener productos' });
   }
 };
 
-// Función para crear productos
+// Crear producto con caracterización técnica
 exports.crearProducto = async (req, res) => {
-  try {
-    const { nombre, codigo, id_categoria, precio_venta, stock_actual, stock_minimo, id_proveedor, id_usuario } = req.body;
+  const {
+    id_categoria, id_proveedor = null, codigo, nombre, descripcion = null,
+    precio_compra = 0, precio_venta, stock_actual = 0, stock_minimo = 5,
+    unidad_medida = 'unidad', numero_serie = null, tipo_control = 'ESTANDAR',
+    ficha_tecnica = null, id_usuario = null
+  } = req.body;
 
-    if (!nombre || !codigo || !id_categoria || precio_venta === undefined || stock_actual === undefined) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios (nombre, codigo, id_categoria, precio_venta, stock_actual)' });
+  if (!id_categoria || !codigo || !nombre || precio_venta === undefined) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios: id_categoria, codigo, nombre o precio_venta' });
+  }
+
+  try {
+    const [existente] = await db.query('SELECT id FROM productos WHERE codigo = ?', [codigo]);
+    if (existente.length > 0) {
+      return res.status(400).json({ error: 'El código de producto ya está registrado' });
     }
 
     const [result] = await db.query(
       `INSERT INTO productos 
-      (nombre, codigo, id_categoria, precio_venta, stock_actual, stock_minimo, id_proveedor, created_by, activo) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+       (id_categoria, id_proveedor, codigo, nombre, descripcion, precio_compra, precio_venta, stock_actual, stock_minimo, unidad_medida, numero_serie, tipo_control, ficha_tecnica, created_by, activo)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
       [
-        nombre,
-        codigo,
-        id_categoria,
-        precio_venta,
-        stock_actual,
-        stock_minimo !== undefined ? stock_minimo : 5,
-        id_proveedor || null,
-        id_usuario || null
+        id_categoria, id_proveedor, codigo, nombre, descripcion, precio_compra, precio_venta,
+        stock_actual, stock_minimo, unidad_medida, numero_serie, tipo_control,
+        ficha_tecnica ? JSON.stringify(ficha_tecnica) : null, id_usuario
       ]
     );
 
-    res.status(201).json({
-      mensaje: 'Producto creado con éxito',
-      id: result.insertId
-    });
+    res.status(201).json({ mensaje: 'Producto creado exitosamente', id: result.insertId });
   } catch (error) {
     console.error('Error al crear producto:', error);
-    res.status(500).json({
-      error: 'Error interno del servidor al guardar',
-      detalle: error.message,
-      codigo: error.code
-    });
+    res.status(500).json({ error: 'Error al registrar el producto' });
   }
 };
 
-// Actualizar producto en MySQL
+// Actualizar producto
 exports.actualizarProducto = async (req, res) => {
   const { id } = req.params;
-  const { nombre, codigo, id_categoria, precio_venta, stock_actual } = req.body;
+  const {
+    id_categoria, id_proveedor = null, codigo, nombre, descripcion = null,
+    precio_compra = 0, precio_venta, stock_actual = 0, stock_minimo = 5,
+    unidad_medida = 'unidad', numero_serie = null, tipo_control = 'ESTANDAR',
+    ficha_tecnica = null
+  } = req.body;
+
   try {
-    const query = 'UPDATE productos SET nombre = ?, codigo = ?, id_categoria = ?, precio_venta = ?, stock_actual = ? WHERE id = ?';
-    await db.query(query, [nombre, codigo, id_categoria, precio_venta, stock_actual, id]);
-    res.json({ message: 'Producto actualizado exitosamente' });
+    const [existente] = await db.query('SELECT id FROM productos WHERE codigo = ? AND id != ?', [codigo, id]);
+    if (existente.length > 0) {
+      return res.status(400).json({ error: 'El código ya pertenece a otro producto' });
+    }
+
+    const [result] = await db.query(
+      `UPDATE productos 
+       SET id_categoria = ?, id_proveedor = ?, codigo = ?, nombre = ?, descripcion = ?, 
+           precio_compra = ?, precio_venta = ?, stock_actual = ?, stock_minimo = ?, 
+           unidad_medida = ?, numero_serie = ?, tipo_control = ?, ficha_tecnica = ?
+       WHERE id = ?`,
+      [
+        id_categoria, id_proveedor, codigo, nombre, descripcion, precio_compra, precio_venta,
+        stock_actual, stock_minimo, unidad_medida, numero_serie, tipo_control,
+        ficha_tecnica ? JSON.stringify(ficha_tecnica) : null, id
+      ]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado para actualizar' });
+    }
+
+    res.json({ mensaje: 'Producto actualizado exitosamente' });
   } catch (error) {
     console.error('Error al actualizar producto:', error);
-    res.status(500).json({ error: 'Error interno al actualizar el producto' });
+    res.status(500).json({ error: 'Error al actualizar el producto' });
   }
 };
 
-// Desactivar producto en MySQL (Soft Delete)
+// Eliminar producto (Soft Delete)
 exports.eliminarProducto = async (req, res) => {
   const { id } = req.params;
   try {
-    const query = 'UPDATE productos SET activo = 0 WHERE id = ?';
-    await db.query(query, [id]);
-    res.json({ message: 'Producto desactivado exitosamente' });
+    const [result] = await db.query('UPDATE productos SET activo = 0 WHERE id = ?', [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+    res.json({ mensaje: 'Producto desactivado correctamente' });
   } catch (error) {
-    console.error('Error al desactivar producto:', error);
+    console.error('Error al eliminar producto:', error);
     res.status(500).json({ error: 'Error interno al desactivar el producto' });
   }
 };
