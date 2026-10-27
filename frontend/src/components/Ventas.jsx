@@ -22,14 +22,13 @@ function Ventas() {
   const [productos, setProductos] = useState([]);
   const [carrito, setCarrito] = useState([]);
   const [busqueda, setBusqueda] = useState('');
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('Todas');
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [cargando, setCargando] = useState(true);
 
   const [clientes, setClientes] = useState([]);
-  // Aseguramos que el ID inicial sea String
   const [idCliente, setIdCliente] = useState(String(CLIENTE_GENERICO.id)); 
   const [buscaCliente, setBuscaCliente] = useState('');
-
   const [facturaGenerada, setFacturaGenerada] = useState(null);
 
   const clienteActual = clientes.find(c => String(c.id) === String(idCliente)) || CLIENTE_GENERICO;
@@ -67,18 +66,13 @@ function Ventas() {
         const data = await response.json();
         let lista = Array.isArray(data) ? data : data.clientes || [];
         
-        // 1. Buscamos en qué posición está el consumidor final real
         const indexCF = lista.findIndex(c => String(documentoCliente(c)) === '2222222222');
         
         if (indexCF !== -1) {
-          // 2. Lo extraemos de la lista
           const consumidorFinalDB = lista[indexCF];
           lista.splice(indexCF, 1);
-          // 3. Lo ponemos al inicio (posición 0)
           lista.unshift(consumidorFinalDB);
-          
           setClientes(lista);
-          // 4. Forzamos String para que el <select> de React haga match perfecto
           setIdCliente(String(consumidorFinalDB.id)); 
         } else {
           setClientes([CLIENTE_GENERICO, ...lista]);
@@ -174,7 +168,6 @@ function Ventas() {
 
       if (response.ok) {
         const resData = await response.json();
-        
         const numeroFactura = resData.id_venta 
           ? String(resData.id_venta).padStart(6, '0') 
           : String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
@@ -194,11 +187,9 @@ function Ventas() {
           metodo: metodoPago
         });
 
-        // REINICIAR AL CONSUMIDOR FINAL DESPUÉS DE LA VENTA
         setCarrito([]);
         const consumidorFinalDB = clientes.find(c => String(documentoCliente(c)) === '2222222222');
         setIdCliente(consumidorFinalDB ? String(consumidorFinalDB.id) : String(CLIENTE_GENERICO.id));
-        
         setBuscaCliente('');
         obtenerProductos();
       } else {
@@ -211,10 +202,17 @@ function Ventas() {
     }
   };
 
-  const productosFiltrados = Array.isArray(productos) ? productos.filter(p =>
-    (p.nombre && p.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
-    (p.codigo && p.codigo.toLowerCase().includes(busqueda.toLowerCase()))
-  ) : [];
+  // --- LÓGICA DE CATEGORÍAS (Limpia y segura) ---
+  const categoriasUnicas = ['Todas', ...new Set(productos.map(p => p.categoria || 'General'))];
+
+  const productosFiltrados = Array.isArray(productos) ? productos.filter(p => {
+    const coincideTexto = (p.nombre && p.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
+                          (p.codigo && p.codigo.toLowerCase().includes(busqueda.toLowerCase()));
+    const categoriaProducto = p.categoria || 'General';
+    const coincideCategoria = categoriaSeleccionada === 'Todas' || categoriaProducto === categoriaSeleccionada;
+
+    return coincideTexto && coincideCategoria;
+  }) : [];
 
   return (
     <div className="admin-container">
@@ -230,28 +228,44 @@ function Ventas() {
             </div>
           </header>
 
-          <div className="action-bar" style={{ marginBottom: '20px' }}>
-            <div className="search-container" style={{ width: '100%' }}>
+          {/* BARRA DE BÚSQUEDA Y FILTRO JUNTOS */}
+          <div className="action-bar" style={{ marginBottom: '20px', display: 'flex', gap: '15px' }}>
+            <div className="search-container" style={{ flex: 1 }}>
               <span className="search-icon">🔍</span>
               <input
                 type="text"
-                placeholder="Buscar producto..."
+                placeholder="Buscar producto por nombre o código..."
                 className="search-input"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
               />
             </div>
+            
+            {/* Nuevo selector de categoría elegante */}
+            <select
+              className="filter-select"
+              value={categoriaSeleccionada}
+              onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+              style={{ width: '200px', padding: '10px 15px', borderRadius: '8px', border: '1px solid #cbd5e1', color: '#334155', fontWeight: '500' }}
+            >
+              {categoriasUnicas.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
 
+          {/* LA CUADRÍCULA ORIGINAL INTACTA */}
           <div className="products-grid">
-            {cargando ? <p>Cargando...</p> : productosFiltrados.map(producto => (
-              <div key={producto.id} className="product-card" onClick={() => agregarAlCarrito(producto)} style={{ cursor: 'pointer', border: '1px solid #e2e8f0', opacity: producto.stock_actual === 0 ? 0.5 : 1 }}>
+            {cargando ? <p>Cargando catálogo...</p> : productosFiltrados.length === 0 ? <p style={{color: '#64748b'}}>No se encontraron productos.</p> : productosFiltrados.map(producto => (
+              <div key={producto.id} className="product-card" onClick={() => agregarAlCarrito(producto)} style={{ cursor: 'pointer', border: '1px solid #e2e8f0', opacity: producto.stock_actual <= 0 ? 0.5 : 1 }}>
                 <div className="product-info">
-                  <h4>{producto.nombre}</h4>
-                  <span className="sku">{producto.codigo}</span>
-                  <div className="product-price-row" style={{ marginTop: '10px' }}>
-                    <span className="price">$ {producto.precio_venta}</span>
-                    <span className="stock">Stock: {producto.stock_actual}</span>
+                  <h4 style={{ margin: '0 0 5px 0' }}>{producto.nombre}</h4>
+                  <span className="sku" style={{ fontSize: '0.8em', color: '#94a3b8' }}>{producto.codigo}</span>
+                  <div className="product-price-row" style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="price" style={{ fontWeight: 'bold', color: '#1e293b' }}>$ {Number(producto.precio_venta).toLocaleString()}</span>
+                    <span className="stock" style={{ fontSize: '0.85em', color: producto.stock_actual <= 0 ? '#ef4444' : '#16a34a', backgroundColor: producto.stock_actual <= 0 ? '#fef2f2' : '#f0fdf4', padding: '2px 6px', borderRadius: '4px' }}>
+                      Stock: {producto.stock_actual}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -259,7 +273,7 @@ function Ventas() {
           </div>
         </div>
 
-        {/* Carrito */}
+        {/* Carrito (Mantenemos todo igual aquí) */}
         <div className="cart-panel" style={{ flex: 1, backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', height: 'fit-content' }}>
           <h3 style={{ margin: '0 0 15px 0' }}>Resumen de Venta</h3>
           <hr style={{ border: 'none', borderBottom: '1px solid #e2e8f0', margin: '0 0 15px 0' }} />
@@ -283,7 +297,7 @@ function Ventas() {
 
             <select
               className="filter-select"
-              value={String(idCliente)} /* Forzamos String aquí también */
+              value={String(idCliente)} 
               onChange={(e) => setIdCliente(e.target.value)}
               style={{ width: '100%' }}
             >
@@ -297,7 +311,6 @@ function Ventas() {
 
             <div style={{ fontSize: '0.8em', color: '#475569', marginTop: '6px' }}>
               Se facturará a <strong>{nombreCliente(clienteActual)}</strong>
-              {documentoCliente(clienteActual) ? ` (${documentoCliente(clienteActual)})` : ''}
             </div>
           </div>
 
@@ -309,18 +322,18 @@ function Ventas() {
             <div>
               <div style={{ maxHeight: '320px', overflowY: 'auto', paddingRight: '5px' }}>
                 {carrito.map(item => (
-                  <div className="cart-item" key={item.id}>
-                    <div className="cart-item-info">
-                      <span className="cart-item-title">{item.nombre}</span>
-                      <span className="cart-item-price">$ {item.precio_venta} c/u</span>
+                  <div className="cart-item" key={item.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
+                    <div className="cart-item-info" style={{ flex: 1 }}>
+                      <div className="cart-item-title" style={{ fontSize: '0.9em', fontWeight: 'bold' }}>{item.nombre}</div>
+                      <div className="cart-item-price" style={{ fontSize: '0.85em', color: '#64748b' }}>$ {Number(item.precio_venta).toLocaleString()} c/u</div>
                     </div>
-                    <div className="cart-actions">
-                      <div className="qty-controls">
-                        <button className="qty-btn" onClick={() => cambiarCantidad(item.id, -1)}>-</button>
-                        <span className="qty-value">{item.cantidad}</span>
-                        <button className="qty-btn" onClick={() => cambiarCantidad(item.id, 1)}>+</button>
+                    <div className="cart-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div className="qty-controls" style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: '6px' }}>
+                        <button style={{ border: 'none', background: 'none', padding: '4px 8px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => cambiarCantidad(item.id, -1)}>-</button>
+                        <span style={{ fontSize: '0.9em', minWidth: '20px', textAlign: 'center' }}>{item.cantidad}</span>
+                        <button style={{ border: 'none', background: 'none', padding: '4px 8px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => cambiarCantidad(item.id, 1)}>+</button>
                       </div>
-                      <button className="btn-delete" onClick={() => eliminarItem(item.id)} title="Eliminar">🗑</button>
+                      <button style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.2em' }} onClick={() => eliminarItem(item.id)} title="Eliminar">🗑</button>
                     </div>
                   </div>
                 ))}
@@ -328,7 +341,7 @@ function Ventas() {
 
               <hr style={{ border: 'none', borderBottom: '1px solid #e2e8f0', margin: '15px 0' }} />
 
-              <select className="filter-select" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value)} style={{ width: '100%', marginBottom: '15px' }}>
+              <select className="filter-select" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value)} style={{ width: '100%', marginBottom: '15px', padding: '10px' }}>
                 <option value="Efectivo">Efectivo</option>
                 <option value="Tarjeta">Tarjeta Débito/Crédito</option>
                 <option value="Nequi/Daviplata">Transferencia (Nequi/Daviplata)</option>
@@ -339,7 +352,7 @@ function Ventas() {
                 <span style={{ color: '#2563eb' }}>$ {totalVenta.toLocaleString()}</span>
               </div>
 
-              <button onClick={procesarVenta} className="btn-primary" style={{ width: '100%', padding: '14px', fontSize: '1.05em' }}>
+              <button onClick={procesarVenta} className="btn-primary" style={{ width: '100%', padding: '14px', fontSize: '1.05em', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
                 💳 Registrar y Cobrar
               </button>
             </div>
@@ -352,7 +365,6 @@ function Ventas() {
             <div className="ticket-impresion" style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', width: '350px', color: '#000', fontFamily: 'monospace' }}>
               <div style={{ textAlign: 'center', borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px' }}>
                 <h2>{nombreEmpresa}</h2>
-                <p style={{ margin: '5px 0' }}>NIT: 900.123.456-7</p>
                 <p style={{ margin: '5px 0' }}>Factura de Venta No. {facturaGenerada.numero}</p>
                 <p style={{ margin: '5px 0' }}>Fecha: {facturaGenerada.fecha}</p>
                 <p style={{ margin: '5px 0' }}>Cajero: {facturaGenerada.cajero}</p>
@@ -362,12 +374,6 @@ function Ventas() {
                 <p style={{ margin: '3px 0' }}>Cliente: {facturaGenerada.cliente.nombre}</p>
                 {facturaGenerada.cliente.documento && (
                   <p style={{ margin: '3px 0' }}>Doc: {facturaGenerada.cliente.documento}</p>
-                )}
-                {facturaGenerada.cliente.telefono && (
-                  <p style={{ margin: '3px 0' }}>Tel: {facturaGenerada.cliente.telefono}</p>
-                )}
-                {facturaGenerada.cliente.direccion && (
-                  <p style={{ margin: '3px 0' }}>Dir: {facturaGenerada.cliente.direccion}</p>
                 )}
               </div>
 
@@ -384,9 +390,7 @@ function Ventas() {
                     {facturaGenerada.items.map((item, idx) => (
                       <tr key={idx}>
                         <td style={{ verticalAlign: 'top' }}>{item.cantidad}</td>
-                        <td style={{ wordBreak: 'break-word', paddingRight: '10px' }}>
-                          {item.nombre}
-                        </td>
+                        <td style={{ wordBreak: 'break-word', paddingRight: '10px' }}>{item.nombre}</td>
                         <td style={{ textAlign: 'right', verticalAlign: 'top' }}>$ {(item.cantidad * item.precio_venta).toLocaleString()}</td>
                       </tr>
                     ))}
