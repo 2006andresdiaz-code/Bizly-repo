@@ -99,30 +99,9 @@ const Devolucion = () => {
       if (response.ok) {
         alert(`✅ ${data.mensaje || 'El ajuste de devolución se realizó con éxito.'}`);
         
-        const prodDevuelto = productosVenta.find(p => p.id_producto.toString() === formData.id_producto) || {};
-        
-        const saldoProductos = productosVenta.map(p => {
-          if (p.id_producto.toString() === formData.id_producto) {
-            return { ...p, cantidad: p.cantidad - Number(formData.cantidad) };
-          }
-          return p;
-        }).filter(p => p.cantidad > 0); 
-
-        setTicketDevolucion({
-          num_comprobante: data?.ticket?.num_comprobante || String(Math.floor(Math.random() * 1000000)).padStart(6, '0'),
-          num_factura_origen: formData.id_venta,
-          fecha: new Date().toLocaleString(),
-          cajero: `${usuario?.nombre || 'Admin'} ${usuario?.apellido || ''}`,
-          cliente: data?.ticket?.cliente || { nombre: 'Consumidor', documento: '', telefono: '', direccion: '' },
-          item_devuelto: {
-            nombre: prodDevuelto.nombre_producto || 'Producto devuelto',
-            cantidad: formData.cantidad,
-            reembolso: formData.monto_reembolso
-          },
-          motivo: formData.motivo,
-          dado_de_baja: formData.dar_de_baja === 'si',
-          items_restantes: saldoProductos
-        });
+        if (data.ticket) {
+          setTicketDevolucion(data.ticket);
+        }
 
         setFormData({ id_venta: '', id_producto: '', cantidad: 1, motivo: '', monto_reembolso: '', dar_de_baja: 'no' });
         setProductosVenta([]);
@@ -247,7 +226,7 @@ const Devolucion = () => {
           </form>
         </div>
 
-        {/* MODAL DE LA FACTURA DE DEVOLUCIÓN A PRUEBA DE FALLOS */}
+        {/* MODAL DE LA FACTURA DE DEVOLUCIÓN COMPLETA */}
         {ticketDevolucion && (
           <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
             <div className="ticket-impresion" style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', width: '380px', color: '#000', fontFamily: 'monospace' }}>
@@ -255,64 +234,58 @@ const Devolucion = () => {
               <div style={{ textAlign: 'center', borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px' }}>
                 <h2>{nombreEmpresa || 'PlugStore'}</h2>
                 <p style={{ margin: '5px 0' }}>NIT: 900.123.456-7</p>
-                <p style={{ margin: '5px 0' }}><strong>FACTURA DE DEVOLUCIÓN No. {ticketDevolucion?.num_comprobante}</strong></p>
-                <p style={{ margin: '5px 0' }}>Fac. Afectada: {ticketDevolucion?.num_factura_origen}</p>
-                <p style={{ margin: '5px 0' }}>Fecha: {ticketDevolucion?.fecha}</p>
-                <p style={{ margin: '5px 0' }}>Cajero: {ticketDevolucion?.cajero}</p>
+                <p style={{ margin: '5px 0' }}><strong>FACTURA DE DEVOLUCIÓN No. {ticketDevolucion.num_comprobante}</strong></p>
+                <p style={{ margin: '5px 0' }}>Fac. Afectada: {ticketDevolucion.num_factura_origen}</p>
+                <p style={{ margin: '5px 0' }}>Fecha: {ticketDevolucion.fecha}</p>
+                <p style={{ margin: '5px 0' }}>Cajero: {usuario?.nombre || 'Admin'}</p>
               </div>
 
               <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px', fontSize: '0.9em' }}>
-                <p style={{ margin: '3px 0' }}>Cliente: {ticketDevolucion?.cliente?.nombre}</p>
-                {ticketDevolucion?.cliente?.documento && <p style={{ margin: '3px 0' }}>Doc: {ticketDevolucion.cliente.documento}</p>}
-                {ticketDevolucion?.cliente?.telefono && <p style={{ margin: '3px 0' }}>Tel: {ticketDevolucion.cliente.telefono}</p>}
-                {ticketDevolucion?.cliente?.direccion && <p style={{ margin: '3px 0' }}>Dir: {ticketDevolucion.cliente.direccion}</p>}
+                <p style={{ margin: '3px 0' }}>Cliente: {ticketDevolucion.cliente.nombre}</p>
+                {ticketDevolucion.cliente.documento && <p style={{ margin: '3px 0' }}>Doc: {ticketDevolucion.cliente.documento}</p>}
+                {ticketDevolucion.cliente.telefono && <p style={{ margin: '3px 0' }}>Tel: {ticketDevolucion.cliente.telefono}</p>}
+                {ticketDevolucion.cliente.direccion && <p style={{ margin: '3px 0' }}>Dir: {ticketDevolucion.cliente.direccion}</p>}
               </div>
 
-              {/* Producto Devuelto */}
+              {/* Sección: Producto Devuelto */}
               <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px' }}>
                 <p style={{ fontWeight: 'bold', margin: '0 0 10px 0', fontSize: '0.9em' }}>DETALLE DE DEVOLUCIÓN</p>
-                <table style={{ width: '100%', textAlign: 'left', fontSize: '0.9em', tableLayout: 'fixed' }}>
+                <table style={{ width: '100%', textAlign: 'left', fontSize: '0.9em' }}>
                   <thead>
                     <tr>
-                      <th style={{ width: '15%' }}>Cant.</th>
-                      <th style={{ width: '60%' }}>Producto</th>
-                      <th style={{ width: '25%', textAlign: 'right' }}>Valor</th>
+                      <th>Cant.</th>
+                      <th>Producto</th>
+                      <th style={{ textAlign: 'right' }}>Valor</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td style={{ verticalAlign: 'top' }}>-{ticketDevolucion?.item_devuelto?.cantidad}</td>
-                      {/* ESTE ES EL CAMBIO PARA DEVOLUCIÓN */}
-                      <td style={{ wordBreak: 'break-word', paddingRight: '10px' }}>
-                        {ticketDevolucion?.item_devuelto?.nombre}
-                      </td>
-                      <td style={{ textAlign: 'right', verticalAlign: 'top' }}>-$ {Number(ticketDevolucion?.item_devuelto?.reembolso).toLocaleString()}</td>
+                      <td>-{ticketDevolucion.item_devuelto.cantidad}</td>
+                      <td>{ticketDevolucion.item_devuelto.nombre.length > 15 ? `${ticketDevolucion.item_devuelto.nombre.substring(0, 15)}...` : ticketDevolucion.item_devuelto.nombre}</td>
+                      <td style={{ textAlign: 'right' }}>-$ {Number(ticketDevolucion.item_devuelto.reembolso).toLocaleString()}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              {/* Productos Restantes (Muestra lo que le queda válido al cliente) */}
-              {ticketDevolucion?.items_restantes?.length > 0 && (
+              {/* Sección: Productos Restantes */}
+              {ticketDevolucion.items_restantes.length > 0 && (
                 <div style={{ borderBottom: '1px dashed #ccc', paddingBottom: '15px', marginBottom: '15px' }}>
                   <p style={{ fontWeight: 'bold', margin: '0 0 10px 0', fontSize: '0.9em' }}>SALDO DE PRODUCTOS EN FACTURA</p>
-                  <table style={{ width: '100%', textAlign: 'left', fontSize: '0.9em', tableLayout: 'fixed' }}>
+                  <table style={{ width: '100%', textAlign: 'left', fontSize: '0.9em' }}>
                     <thead>
                       <tr>
-                        <th style={{ width: '15%' }}>Cant.</th>
-                        <th style={{ width: '60%' }}>Producto</th>
-                        <th style={{ width: '25%', textAlign: 'right' }}>Total</th>
+                        <th>Cant.</th>
+                        <th>Producto</th>
+                        <th style={{ textAlign: 'right' }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {ticketDevolucion.items_restantes.map((item, idx) => (
                         <tr key={idx}>
-                          <td style={{ verticalAlign: 'top' }}>{item.cantidad}</td>
-                          {/* ESTE ES EL CAMBIO PARA LOS RESTANTES */}
-                          <td style={{ wordBreak: 'break-word', paddingRight: '10px' }}>
-                            {item.nombre_producto}
-                          </td>
-                          <td style={{ textAlign: 'right', verticalAlign: 'top' }}>$ {(item.cantidad * item.precio).toLocaleString()}</td>
+                          <td>{item.cantidad_restante}</td>
+                          <td>{item.nombre.length > 15 ? `${item.nombre.substring(0, 15)}...` : item.nombre}</td>
+                          <td style={{ textAlign: 'right' }}>$ {(item.cantidad_restante * item.precio).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -321,7 +294,7 @@ const Devolucion = () => {
               )}
 
               <div style={{ textAlign: 'right', fontSize: '1.1em', fontWeight: 'bold', marginBottom: '20px' }}>
-                <p style={{ color: '#ef4444' }}>REEMBOLSO TOTAL: $ {Number(ticketDevolucion?.item_devuelto?.reembolso).toLocaleString()}</p>
+                <p style={{ color: '#ef4444' }}>REEMBOLSO TOTAL: $ {Number(ticketDevolucion.item_devuelto.reembolso).toLocaleString()}</p>
               </div>
 
               <div className="no-print" style={{ display: 'flex', gap: '10px' }}>

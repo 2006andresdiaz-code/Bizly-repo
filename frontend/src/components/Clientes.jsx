@@ -24,34 +24,31 @@ function Clientes() {
   const [guardando, setGuardando] = useState(false);
   const [verInactivos, setVerInactivos] = useState(false);
 
-  // Datos del formulario (sirve tanto para crear como para editar)
+  // Datos del formulario
   const [form, setForm] = useState(CLIENTE_VACIO);
   const editando = Boolean(form.id);
 
-  const obtenerClientes = () => {
+  const obtenerClientes = async () => {
     const token = localStorage.getItem('token');
     const parametro = verInactivos ? '?activo=0' : '?activo=1';
 
-    return fetch(`http://localhost:5000/api/clientes${parametro}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : ''
-      }
-    })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`Error HTTP: ${res.status}`);
+    try {
+      const res = await fetch(`http://localhost:5000/api/clientes${parametro}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
         }
-        return res.json();
-      })
-      .then(data => {
-        setClientes(Array.isArray(data) ? data : data.clientes || []);
-      })
-      .catch(err => {
-        console.error("Error al cargar clientes:", err);
-        setClientes([]);
       });
+      
+      if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+      
+      const data = await res.json();
+      setClientes(Array.isArray(data) ? data : data.clientes || []);
+    } catch (err) {
+      console.error("Error al cargar clientes:", err);
+      setClientes([]);
+    }
   };
 
   useEffect(() => {
@@ -59,13 +56,12 @@ function Clientes() {
     obtenerClientes().finally(() => setLoading(false));
   }, [verInactivos]);
 
-  // Filtrar clientes según el buscador de forma segura
   const clientesFiltrados = Array.isArray(clientes) ? clientes.filter(cliente => {
     const texto = busqueda.toLowerCase();
     return (
       (cliente.nombre && cliente.nombre.toLowerCase().includes(texto)) ||
-      (cliente.documento && cliente.documento.toString().includes(texto)) ||
-      (cliente.telefono && cliente.telefono.toString().includes(texto)) ||
+      (cliente.documento && String(cliente.documento).includes(texto)) ||
+      (cliente.telefono && String(cliente.telefono).includes(texto)) ||
       (cliente.email && cliente.email.toLowerCase().includes(texto))
     );
   }) : [];
@@ -132,8 +128,7 @@ function Clientes() {
         setForm(CLIENTE_VACIO);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(`No se pudo guardar el cliente: ${errorData.error || errorData.mensaje || 'Datos inválidos'}`);
-        console.error("Detalle del error del backend:", errorData);
+        alert(`No se pudo guardar: ${errorData.error || errorData.mensaje || 'Datos inválidos'}`);
       }
     } catch (error) {
       console.error("Error de conexión:", error);
@@ -145,53 +140,44 @@ function Clientes() {
 
   const confirmarDesactivacion = async (cliente) => {
     const id = cliente.id || cliente.id_cliente;
-    const confirmar = window.confirm(`¿Desactivar al cliente "${cliente.nombre}"? Sus ventas históricas se conservarán.`);
+    const confirmar = window.confirm(`¿Desactivar a "${cliente.nombre}"? Sus ventas se conservarán.`);
     if (!confirmar) return;
 
     const token = localStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:5000/api/clientes/${id}/desactivar`, {
         method: 'PATCH',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
-        }
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });
 
       if (response.ok) {
         await obtenerClientes();
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        alert(`No se pudo desactivar: ${errorData.error || errorData.mensaje || 'Error desconocido'}`);
+        alert("No se pudo desactivar el cliente.");
       }
     } catch (error) {
       console.error("Error de conexión:", error);
-      alert("No se pudo conectar con el servidor.");
     }
   };
 
   const reactivarCliente = async (cliente) => {
     const id = cliente.id || cliente.id_cliente;
-    const confirmar = window.confirm(`¿Reactivar al cliente "${cliente.nombre}"?`);
-    if (!confirmar) return;
+    if (!window.confirm(`¿Reactivar a "${cliente.nombre}"?`)) return;
 
     const token = localStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:5000/api/clientes/${id}/reactivar`, {
         method: 'PATCH',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : ''
-        }
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });
 
       if (response.ok) {
         await obtenerClientes();
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        alert(`No se pudo reactivar: ${errorData.error || errorData.mensaje || 'Error desconocido'}`);
+        alert("No se pudo reactivar el cliente.");
       }
     } catch (error) {
       console.error("Error de conexión:", error);
-      alert("No se pudo conectar con el servidor.");
     }
   };
 
@@ -237,15 +223,19 @@ function Clientes() {
           </div>
         </div>
 
-        {/* Cuadrícula de Tarjetas de Clientes Dinámica */}
+        {/* Cuadrícula de Tarjetas de Clientes */}
         <div className="products-grid">
           {loading ? (
-            <p>Cargando clientes desde la base de datos...</p>
+            <p>Cargando clientes...</p>
           ) : clientesFiltrados.length === 0 ? (
-            <p>{verInactivos ? 'No hay clientes desactivados.' : 'No se encontraron clientes registrados o la sesión requiere reautenticación.'}</p>
+            <p>{verInactivos ? 'No hay clientes desactivados.' : 'No se encontraron clientes.'}</p>
           ) : (
             clientesFiltrados.map((cliente) => {
               const iniciales = cliente.nombre ? cliente.nombre.substring(0, 2).toUpperCase() : 'CL';
+              
+              // Extraemos métricas enviadas por el backend o usamos 0 por defecto
+              const totalCompras = cliente.total_compras || cliente.cantidad_compras || 0;
+              const totalGastado = Number(cliente.total_gastado || 0).toLocaleString();
 
               return (
                 <div className="product-card client-card" key={cliente.id || cliente.id_cliente}>
@@ -253,13 +243,13 @@ function Clientes() {
                     <div className="client-avatar">{iniciales}</div>
                     <div className="client-info">
                       <h4>{cliente.nombre} {cliente.apellido || ''}</h4>
-                      <span className="client-doc">CC {cliente.documento}</span>
+                      <span className="client-doc">{cliente.tipo_documento || 'CC'} {cliente.documento}</span>
                     </div>
                   </div>
                   <div className="client-body">
                     <div className="client-stats">
-                      <span>🛍️ 0 compras</span>
-                      <span className="client-spent">$ 0</span>
+                      <span>🛍️ {totalCompras} compras</span>
+                      <span className="client-spent">$ {totalGastado}</span>
                     </div>
                     <div className="client-contact">
                       <span>📞 {cliente.telefono || 'Sin teléfono'}</span>

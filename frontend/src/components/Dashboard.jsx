@@ -8,20 +8,32 @@ import '../styles_components/Dashboard.css';
 function Dashboard() {
   const navigate = useNavigate();
   const { usuario } = useContext(AuthContext) || {};
+  
   const [ventas, setVentas] = useState([]);
+  const [productos, setProductos] = useState([]); 
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
     const cargarDatosDashboard = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/ventas', {
-          headers: { 'Authorization': token ? `Bearer ${token}` : '' }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setVentas(Array.isArray(data) ? data : []);
+        const headers = { 'Authorization': token ? `Bearer ${token}` : '' };
+
+        const [resVentas, resProductos] = await Promise.all([
+          fetch('http://localhost:5000/api/ventas', { headers }),
+          fetch('http://localhost:5000/api/productos', { headers })
+        ]);
+
+        if (resVentas.ok) {
+          const dataVentas = await resVentas.json();
+          setVentas(Array.isArray(dataVentas) ? dataVentas : []);
         }
+
+        if (resProductos.ok) {
+          const dataProductos = await resProductos.json();
+          setProductos(Array.isArray(dataProductos) ? dataProductos : []);
+        }
+
       } catch (error) {
         console.error('Error al cargar datos del dashboard:', error);
       } finally {
@@ -35,7 +47,8 @@ function Dashboard() {
   const totalFacturas = ventas.length;
   const ultimasVentas = ventas.slice(0, 5); 
 
-  // Función corregida: Ahora también traduce el rol '3'
+  const stockBajoCount = productos.filter(p => Number(p.stock_actual) <= Number(p.stock_minimo || 5)).length;
+
   const obtenerNombreRol = (rol) => {
     if (String(rol) === '1') return 'Administrador';
     if (String(rol) === '2' || String(rol) === '3') return 'Vendedor';
@@ -85,7 +98,7 @@ function Dashboard() {
             <div className="metric-icon metric-icon-red">⚠️</div>
             <div className="metric-info">
               <h3>Alertas de Stock</h3>
-              <p className="metric-value">3</p>
+              <p className="metric-value">{cargando ? '...' : stockBajoCount}</p>
               <span className="metric-trend negative">Productos por agotar</span>
             </div>
           </div>
@@ -111,8 +124,9 @@ function Dashboard() {
               ) : (
                 ultimasVentas.map((v) => (
                   <tr key={v.id}>
+                    {/* AQUÍ ESTÁ LA MAGIA: Formateamos el ID secuencial con ceros a la izquierda */}
                     <td className="cell-link" onClick={() => navigate('/reportes')}>
-                      {v.numero_factura || `FAC-${v.id}`}
+                      FAC-{String(v.id).padStart(5, '0')}
                     </td>
                     <td className="cell-method">{v.metodo_pago}</td>
                     <td className="cell-total">$ {Number(v.total).toLocaleString()}</td>

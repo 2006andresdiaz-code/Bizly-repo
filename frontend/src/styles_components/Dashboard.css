@@ -1,22 +1,51 @@
 /* src/styles_components/Dashboard.css */
 
+/* 1. RESET GLOBAL: Quita márgenes y personaliza la barra de desplazamiento */
+body, html, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; 
+}
+
+/* --- ESTILOS PARA UNA BARRA DE DESPLAZAMIENTO ELEGANTE Y DELGADA --- */
+::-webkit-scrollbar {
+  width: 6px; /* Barra delgada */
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent; /* Fondo transparente */
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* Color gris claro */
+  border-radius: 10px; /* Bordes redondeados */
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* Gris más oscurito al pasar el mouse */
+}
+
 .admin-container {
   display: flex;
   height: 100vh;
   width: 100%;
-  background-color: #f4f7f6; /* Fondo gris claro para que resalten las tarjetas blancas */
+  background-color: #f4f7f6;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
 }
 
 /* --- SIDEBAR --- */
 .sidebar {
   width: 260px;
-  background-color: #1a1a2e; /* Azul oscuro corporativo */
+  min-width: 260px;
+  background-color: #1a1a2e;
   color: white;
   display: flex;
   flex-direction: column;
   padding: 20px 0;
   box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  height: 100%;
+  z-index: 10;
+  box-sizing: border-box;
 }
 
 .sidebar-brand {
@@ -33,6 +62,7 @@
   border-radius: 50%;
   background: white;
   padding: 2px;
+  flex-shrink: 0;
 }
 
 .sidebar-brand h2 {
@@ -44,7 +74,7 @@
 .sidebar-brand p {
   margin: 0;
   font-size: 12px;
-  color: #81C784; /* Verde claro Bizly */
+  color: #81C784;
 }
 
 .sidebar-badge {
@@ -62,6 +92,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .nav-item {
@@ -91,12 +122,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .user-profile {
   display: flex;
   align-items: center;
   gap: 10px;
+  overflow: hidden;
 }
 
 .avatar {
@@ -104,17 +137,27 @@
   color: white;
   width: 35px;
   height: 35px;
+  min-width: 35px;
+  min-height: 35px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
+  flex-shrink: 0;
+}
+
+.user-info {
+  overflow: hidden;
 }
 
 .user-info .name {
   display: block;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-info .role {
@@ -126,7 +169,9 @@
 .main-content {
   flex: 1;
   padding: 30px 40px;
-  overflow-y: auto;
+  height: 100%; 
+  overflow-y: auto; 
+  box-sizing: border-box; 
 }
 
 .top-header {
@@ -169,7 +214,7 @@
   text-transform: capitalize;
 }
 
-/* --- NUEVAS TARJETAS PARA EL DASHBOARD (MÉTRICAS DINÁMICAS) --- */
+/* --- TARJETAS PARA EL DASHBOARD (MÉTRICAS DINÁMICAS) --- */
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -188,7 +233,7 @@
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
   border: 1px solid #e2e8f0;
   transition: transform 0.2s ease;
-  cursor: pointer; /* Cursor interactivo */
+  cursor: pointer;
 }
 
 .metric-card:hover {
@@ -207,7 +252,6 @@
   flex-shrink: 0;
 }
 
-/* Colores extraídos del JSX para los íconos */
 .metric-icon-blue { background-color: #eef2ff; }
 .metric-icon-green { background-color: #f0fdf4; }
 .metric-icon-red { background-color: #fef2f2; }
@@ -234,7 +278,7 @@
 
 .metric-trend.positive { color: #16a34a; }
 .metric-trend.negative { color: #dc2626; }
-.metric-trend.neutral { color: #64748b; } /* Extraído del texto 'Facturas emitidas' */
+.metric-trend.neutral { color: #64748b; }
 
 /* --- PANELES Y TABLAS DE ÚLTIMAS VENTAS --- */
 .panel {
@@ -248,11 +292,10 @@
 .panel h3 {
   margin: 0 0 20px;
   font-size: 16px;
-  color: #1e293b; /* Color extraído del JSX */
+  color: #1e293b;
   letter-spacing: 0;
 }
 
-/* Estilos de tabla aplicados directamente al Dashboard */
 .sales-table {
   width: 100%;
   border-collapse: collapse;
@@ -285,7 +328,6 @@
   padding: 15px;
 }
 
-/* Celdas específicas extraídas del JSX */
 .cell-link {
   color: #2563eb;
   font-weight: 500;
@@ -307,15 +349,15 @@
   text-align: right;
 }
 
-/* --- BOTÓN SALIR --- */
+/* --- BOTÓN SALIR (Ajustado y centrado) --- */
 .logout-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
-  padding: 5px 8px;
-  margin-top: 6px;
+  width: fit-content; /* Se ajusta exactamente al tamaño del texto */
+  padding: 6px 20px; /* Padding más ancho a los lados */
+  margin: 10px auto 0 auto; /* Lo centra horizontalmente */
   background-color: transparent;
   color: #ef4444;
   border: 1px solid #fecaca;

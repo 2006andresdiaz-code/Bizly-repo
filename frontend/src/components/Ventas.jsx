@@ -7,10 +7,10 @@ import '../styles_components/Dashboard.css';
 import '../styles_components/Ventas.css';
 
 const CLIENTE_GENERICO = {
-  id: 1,
+  id: 'generico', 
   nombre: 'Consumidor',
   apellido: 'Final',
-  documento: '222222222222',
+  documento: '2222222222',
   telefono: '',
   direccion: ''
 };
@@ -26,7 +26,8 @@ function Ventas() {
   const [cargando, setCargando] = useState(true);
 
   const [clientes, setClientes] = useState([]);
-  const [idCliente, setIdCliente] = useState(CLIENTE_GENERICO.id);
+  // Aseguramos que el ID inicial sea String
+  const [idCliente, setIdCliente] = useState(String(CLIENTE_GENERICO.id)); 
   const [buscaCliente, setBuscaCliente] = useState('');
 
   const [facturaGenerada, setFacturaGenerada] = useState(null);
@@ -61,17 +62,36 @@ function Ventas() {
       const response = await fetch('http://localhost:5000/api/clientes', {
         headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });
+      
       if (response.ok) {
         const data = await response.json();
-        const lista = Array.isArray(data) ? data : data.clientes || [];
-        const tieneGenerico = lista.some(c => String(c.id) === String(CLIENTE_GENERICO.id));
-        setClientes(tieneGenerico ? lista : [CLIENTE_GENERICO, ...lista]);
+        let lista = Array.isArray(data) ? data : data.clientes || [];
+        
+        // 1. Buscamos en qué posición está el consumidor final real
+        const indexCF = lista.findIndex(c => String(documentoCliente(c)) === '2222222222');
+        
+        if (indexCF !== -1) {
+          // 2. Lo extraemos de la lista
+          const consumidorFinalDB = lista[indexCF];
+          lista.splice(indexCF, 1);
+          // 3. Lo ponemos al inicio (posición 0)
+          lista.unshift(consumidorFinalDB);
+          
+          setClientes(lista);
+          // 4. Forzamos String para que el <select> de React haga match perfecto
+          setIdCliente(String(consumidorFinalDB.id)); 
+        } else {
+          setClientes([CLIENTE_GENERICO, ...lista]);
+          setIdCliente(String(CLIENTE_GENERICO.id));
+        }
       } else {
         setClientes([CLIENTE_GENERICO]);
+        setIdCliente(String(CLIENTE_GENERICO.id));
       }
     } catch (error) {
       console.error('Error al cargar clientes:', error);
       setClientes([CLIENTE_GENERICO]);
+      setIdCliente(String(CLIENTE_GENERICO.id));
     }
   };
 
@@ -90,7 +110,7 @@ function Ventas() {
     });
 
     if (filtrados.length > 0) {
-      setIdCliente(filtrados[0].id);
+      setIdCliente(String(filtrados[0].id));
     } else {
       setIdCliente(''); 
     }
@@ -134,7 +154,7 @@ function Ventas() {
     if (!idCliente) return alert("Elige un cliente antes de cobrar.");
 
     const payload = {
-      id_cliente: Number(idCliente),
+      id_cliente: isNaN(Number(idCliente)) ? 1 : Number(idCliente),
       id_usuario: usuario?.id || 1,
       total: totalVenta,
       metodo_pago: metodoPago,
@@ -174,8 +194,11 @@ function Ventas() {
           metodo: metodoPago
         });
 
+        // REINICIAR AL CONSUMIDOR FINAL DESPUÉS DE LA VENTA
         setCarrito([]);
-        setIdCliente(CLIENTE_GENERICO.id);
+        const consumidorFinalDB = clientes.find(c => String(documentoCliente(c)) === '2222222222');
+        setIdCliente(consumidorFinalDB ? String(consumidorFinalDB.id) : String(CLIENTE_GENERICO.id));
+        
         setBuscaCliente('');
         obtenerProductos();
       } else {
@@ -260,7 +283,7 @@ function Ventas() {
 
             <select
               className="filter-select"
-              value={idCliente}
+              value={String(idCliente)} /* Forzamos String aquí también */
               onChange={(e) => setIdCliente(e.target.value)}
               style={{ width: '100%' }}
             >
@@ -361,7 +384,6 @@ function Ventas() {
                     {facturaGenerada.items.map((item, idx) => (
                       <tr key={idx}>
                         <td style={{ verticalAlign: 'top' }}>{item.cantidad}</td>
-                        {/* AQUÍ ESTÁ EL CAMBIO PARA QUE SE MUESTRE COMPLETO Y BAJE DE LÍNEA */}
                         <td style={{ wordBreak: 'break-word', paddingRight: '10px' }}>
                           {item.nombre}
                         </td>

@@ -1,13 +1,14 @@
-// src/routes/clienteRoutes.js
 const express = require('express');
 const router = express.Router();
-const { obtenerClientes, crearCliente } = require('../controllers/clienteController');
-const { verificarToken } = require('../middlewares/authMiddleware');
+const clienteController = require('../controllers/clienteController');
+const { verificarToken } = require('../middlewares/authMiddleware'); // O como se llame tu middleware de seguridad
 
-// Ruta para obtener la lista de clientes: GET / (Puede ser pública o requerir token)
-router.get('/', verificarToken, obtenerClientes);
+router.get('/', verificarToken, clienteController.obtenerClientes);
+router.post('/', verificarToken, clienteController.crearCliente);
 
-// Ruta para registrar un nuevo cliente: POST / (Protegida con token)
-router.post('/', verificarToken, crearCliente);
+// ESTAS RUTAS SON LAS NUEVAS QUE AHORA SÍ FUNCIONARÁN:
+router.put('/:id', verificarToken, clienteController.actualizarCliente);
+router.patch('/:id/desactivar', verificarToken, clienteController.desactivarCliente);
+router.patch('/:id/reactivar', verificarToken, clienteController.reactivarCliente);
 
 module.exports = router;

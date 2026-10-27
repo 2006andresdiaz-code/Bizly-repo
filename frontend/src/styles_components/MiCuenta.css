@@ -1,4 +1,4 @@
-/* src/components/MiCuenta.css */
+/* src/styles_components/MiCuenta.css */
 
 .account-grid {
   display: grid;
@@ -48,6 +48,33 @@
   color: #64748b;
   line-height: 1.5;
   margin-bottom: 20px;
+}
+
+/* --- BOTÓN ESPECIAL PARA CAMBIO DE CONTRASEÑA --- */
+.btn-security {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); /* Degradado violeta/azul corporativo */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(79, 70, 229, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-security:hover {
+  transform: translateY(-2px); /* Se levanta un poquito */
+  box-shadow: 0 6px 12px rgba(79, 70, 229, 0.35); /* Sombra más grande */
+  background: linear-gradient(135deg, #4338ca 0%, #312e81 100%);
+}
+
+.btn-security:active {
+  transform: translateY(0); /* Vuelve a bajar al hacer clic */
 }
 
 .btn-outline {
