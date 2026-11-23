@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 exports.obtenerUsuarios = async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT id, id_rol, nombre, apellido, email, activo, created_at FROM usuarios WHERE activo = 1'
+      'SELECT id, id_rol, nombre, apellido, email, tipo_negocio, activo, created_at FROM usuarios WHERE activo = 1'
     );
     res.json(rows);
   } catch (error) {
@@ -18,8 +18,8 @@ exports.obtenerUsuarios = async (req, res) => {
 
 // --- REGISTRAR USUARIO (POST) ---
 exports.registrar = async (req, res) => {
-  // 1. Extraemos los campos nuevos: id_rol y codigo_admin
-  const { nombre, apellido, email, password, id_rol, codigo_admin } = req.body;
+  // 1. Extraemos los campos nuevos, incluyendo tipo_negocio
+  const { nombre, apellido, email, password, id_rol, codigo_admin, tipo_negocio } = req.body;
 
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: 'Faltan campos obligatorios (nombre, email, password)' });
@@ -43,10 +43,10 @@ exports.registrar = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Se agrega 'apellido' en el INSERT para evitar el error de campo vacío
+    // Se agrega tipo_negocio en el INSERT (si no envían nada, queda como 'general')
     const [result] = await db.query(
-      `INSERT INTO usuarios (nombre, apellido, email, password_hash, id_rol, activo) VALUES (?, ?, ?, ?, ?, 1)`,
-      [nombre, apellido || '', email, passwordHash, id_rol || 2] 
+      `INSERT INTO usuarios (nombre, apellido, email, password_hash, id_rol, tipo_negocio, activo) VALUES (?, ?, ?, ?, ?, ?, 1)`,
+      [nombre, apellido || '', email, passwordHash, id_rol || 2, tipo_negocio || 'general'] 
     );
 
     res.status(201).json({
@@ -69,8 +69,9 @@ exports.login = async (req, res) => {
   }
 
   try {
+    // Agregamos tipo_negocio a la consulta SELECT
     const [rows] = await db.query(
-      'SELECT id, nombre, apellido, email, password_hash, id_rol FROM usuarios WHERE email = ? AND activo = 1',
+      'SELECT id, nombre, apellido, email, password_hash, id_rol, tipo_negocio FROM usuarios WHERE email = ? AND activo = 1',
       [email]
     );
 
@@ -86,11 +87,12 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: usuario.id, email: usuario.email, rol: usuario.id_rol },
+      { id: usuario.id, email: usuario.email, rol: usuario.id_rol, tipo_negocio: usuario.tipo_negocio },
       process.env.JWT_SECRET || 'secreto_super_seguro',
       { expiresIn: '8h' }
     );
 
+    // Enviamos el tipo_negocio en la respuesta para que React lo guarde
     res.json({
       mensaje: 'Inicio de sesión exitoso',
       token, 
@@ -99,7 +101,8 @@ exports.login = async (req, res) => {
         nombre: usuario.nombre,
         apellido: usuario.apellido,
         email: usuario.email,
-        rol: usuario.id_rol
+        rol: usuario.id_rol,
+        tipo_negocio: usuario.tipo_negocio
       }
     });
 

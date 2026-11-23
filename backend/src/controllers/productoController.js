@@ -30,12 +30,20 @@ exports.obtenerProductos = async (req, res) => {
 
 // Crear producto con caracterización técnica
 exports.crearProducto = async (req, res) => {
-  const {
+  // Usamos let para poder modificar los valores si vienen vacíos
+  let {
     id_categoria, id_proveedor = null, codigo, nombre, descripcion = null,
-    precio_compra = 0, precio_venta, stock_actual = 0, stock_minimo = 5,
+    precio_compra, precio_venta, stock_actual, stock_minimo,
     unidad_medida = 'unidad', numero_serie = null, tipo_control = 'ESTANDAR',
     ficha_tecnica = null, id_usuario = null
   } = req.body;
+
+  // SANITIZACIÓN: Si envían campos vacíos (''), los convertimos a números seguros
+  precio_compra = precio_compra === '' || precio_compra == null ? 0 : Number(precio_compra);
+  precio_venta = precio_venta === '' || precio_venta == null ? 0 : Number(precio_venta);
+  stock_actual = stock_actual === '' || stock_actual == null ? 0 : Number(stock_actual);
+  stock_minimo = stock_minimo === '' || stock_minimo == null ? 5 : Number(stock_minimo);
+  id_proveedor = id_proveedor === '' ? null : id_proveedor;
 
   if (!id_categoria || !codigo || !nombre || precio_venta === undefined) {
     return res.status(400).json({ error: 'Faltan campos obligatorios: id_categoria, codigo, nombre o precio_venta' });
@@ -68,12 +76,19 @@ exports.crearProducto = async (req, res) => {
 // Actualizar producto
 exports.actualizarProducto = async (req, res) => {
   const { id } = req.params;
-  const {
+  let {
     id_categoria, id_proveedor = null, codigo, nombre, descripcion = null,
-    precio_compra = 0, precio_venta, stock_actual = 0, stock_minimo = 5,
+    precio_compra, precio_venta, stock_actual, stock_minimo,
     unidad_medida = 'unidad', numero_serie = null, tipo_control = 'ESTANDAR',
     ficha_tecnica = null
   } = req.body;
+
+  // SANITIZACIÓN para evitar el mismo error al actualizar
+  precio_compra = precio_compra === '' || precio_compra == null ? 0 : Number(precio_compra);
+  precio_venta = precio_venta === '' || precio_venta == null ? 0 : Number(precio_venta);
+  stock_actual = stock_actual === '' || stock_actual == null ? 0 : Number(stock_actual);
+  stock_minimo = stock_minimo === '' || stock_minimo == null ? 5 : Number(stock_minimo);
+  id_proveedor = id_proveedor === '' ? null : id_proveedor;
 
   try {
     const [existente] = await db.query('SELECT id FROM productos WHERE codigo = ? AND id != ?', [codigo, id]);

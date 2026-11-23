@@ -8,7 +8,7 @@ exports.crearDevolucion = async (req, res) => {
 
     const { id_venta, id_producto, cantidad, motivo, monto_reembolso, dar_de_baja } = req.body;
 
-    // 1. Buscamos el ID real de la venta
+    // 1. Buscamos la venta
     const [ventas] = await connection.query(
       'SELECT id, numero_factura, id_cliente FROM ventas WHERE numero_factura = ? OR id = ?',
       [id_venta, id_venta]
@@ -22,7 +22,7 @@ exports.crearDevolucion = async (req, res) => {
     const numeroFacturaVenta = ventas[0].numero_factura;
     const idCliente = ventas[0].id_cliente;
 
-    // 2. Traer datos del cliente para la nueva factura
+    // 2. Traer datos del cliente
     let cliente = { nombre: 'Consumidor Final', documento: '', telefono: '', direccion: '' };
     if (idCliente) {
       const [clienteData] = await connection.query('SELECT nombre, apellido, documento, telefono, direccion FROM clientes WHERE id = ?', [idCliente]);
@@ -36,39 +36,39 @@ exports.crearDevolucion = async (req, res) => {
       }
     }
 
-    // 3. Guardamos la devolución
+    // 3. Guardar devolución
     const [devolucionResult] = await connection.query(
-      `INSERT INTO devoluciones (id_venta, id_producto, id_usuario, cantidad, monto_reembolso, motivo)
+      `INSERT INTO devoluciones (id_venta, id_producto, id_usuario, cantidad, monto_reembolsado, motivo)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [ventaRealId, id_producto, 1, cantidad, monto_reembolso, motivo]
     );
     const idDevolucion = devolucionResult.insertId;
     const numComprobante = String(idDevolucion).padStart(6, '0');
 
-    // 4. Info del producto devuelto
+    // 4. Info del producto
     const [prodInfo] = await connection.query('SELECT stock_actual, nombre FROM productos WHERE id = ?', [id_producto]);
     const stockActual = prodInfo[0].stock_actual;
     const nombreProducto = prodInfo[0].nombre;
     let stockDespues = stockActual;
 
-    // 5. Lógica de inventario (Baja vs Regreso)
+    // 5. Lógica de inventario
     if (!dar_de_baja) {
       await connection.query('UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?', [cantidad, id_producto]);
       stockDespues = stockActual + Number(cantidad);
       await connection.query(
-        `INSERT INTO movimientos_inventario (id_producto, id_usuario, tipo, cantidad, stock_antes, stock_despues, motivo, estado_producto)
-         VALUES (?, ?, 'devolucion', ?, ?, ?, ?, 'Buen estado')`,
+        `INSERT INTO movimientos_inventario (id_producto, id_usuario, tipo_movimiento, cantidad, stock_anterior, stock_nuevo, motivo)
+         VALUES (?, ?, 'devolucion', ?, ?, ?, ?)`,
         [id_producto, 1, cantidad, stockActual, stockDespues, motivo]
       );
     } else {
       await connection.query(
-        `INSERT INTO movimientos_inventario (id_producto, id_usuario, tipo, cantidad, stock_antes, stock_despues, motivo, estado_producto)
-         VALUES (?, ?, 'ajuste', ?, ?, ?, ?, 'Dado de baja')`,
+        `INSERT INTO movimientos_inventario (id_producto, id_usuario, tipo_movimiento, cantidad, stock_anterior, stock_nuevo, motivo)
+         VALUES (?, ?, 'ajuste', ?, ?, ?, ?)`,
         [id_producto, 1, cantidad, stockActual, stockActual, 'Baja por Devolución: ' + motivo]
       );
     }
 
-    // 6. Consultamos qué productos le quedan disponibles de esa factura
+    // 6. Consultar restantes (CORREGIDO: dv.precio_unit)
     const queryRestantes = `
       SELECT 
         p.nombre AS producto, 
@@ -91,7 +91,6 @@ exports.crearDevolucion = async (req, res) => {
     await connection.commit();
     connection.release();
 
-    // 7. Armamos el ticket para el frontend
     res.status(201).json({ 
       mensaje: 'Devolución procesada con éxito',
       ticket: {

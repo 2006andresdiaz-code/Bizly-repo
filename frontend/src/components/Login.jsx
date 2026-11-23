@@ -31,11 +31,16 @@ function Login() {
       if (response.ok) {
         console.log('¡Bienvenido!', data.usuario);
         
-        // 🔑 GUARDAMOS EL TOKEN EN EL LOCALSTORAGE PARA LAS PETICIONES PROTEGIDAS
+        // 🔑 GUARDAMOS EL TOKEN EN EL LOCALSTORAGE
         if (data.token) {
           localStorage.setItem('token', data.token);
         } else if (data.accessToken) {
           localStorage.setItem('token', data.accessToken);
+        }
+
+        // --- NUEVO: Guardamos el tipo de negocio en el LocalStorage ---
+        if (data.usuario && data.usuario.tipo_negocio) {
+          localStorage.setItem('tipo_negocio', data.usuario.tipo_negocio);
         }
 
         login(data.usuario);

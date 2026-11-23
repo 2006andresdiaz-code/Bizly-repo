@@ -31,6 +31,22 @@ function Ventas() {
   const [buscaCliente, setBuscaCliente] = useState('');
   const [facturaGenerada, setFacturaGenerada] = useState(null);
 
+  // --- LEYENDO EL TIPO DE NEGOCIO ---
+  const tipoNegocio = localStorage.getItem('tipo_negocio') || 'general';
+
+  // --- TEXTOS DINÁMICOS SEGÚN NEGOCIO ---
+  const getTextos = () => {
+    switch(tipoNegocio) {
+      case 'tecnologia': return { placeholder: 'Buscar dispositivo, marca, código o IMEI...', noResult: 'No se encontraron dispositivos.' };
+      case 'supermercado': return { placeholder: 'Buscar artículo, marca o código...', noResult: 'No se encontraron artículos.' };
+      case 'farmacia': return { placeholder: 'Buscar medicamento, laboratorio o Lote...', noResult: 'No se encontraron medicamentos.' };
+      case 'ropa': return { placeholder: 'Buscar prenda, talla, color o código...', noResult: 'No se encontraron prendas.' };
+      case 'ferreteria': return { placeholder: 'Buscar material, herramienta o código...', noResult: 'No se encontraron materiales.' };
+      default: return { placeholder: 'Buscar producto por nombre o código...', noResult: 'No se encontraron productos.' };
+    }
+  };
+  const textosDinamicos = getTextos();
+
   const clienteActual = clientes.find(c => String(c.id) === String(idCliente)) || CLIENTE_GENERICO;
 
   const nombreCliente = (c) =>
@@ -96,6 +112,7 @@ function Ventas() {
 
   const handleBuscarCliente = (e) => {
     const texto = e.target.value;
+    setBusqueda(texto); // Corregido: setBuscaCliente(texto)
     setBuscaCliente(texto);
 
     const filtrados = clientes.filter(c => {
@@ -117,7 +134,7 @@ function Ventas() {
 
   const agregarAlCarrito = (producto) => {
     if (producto.stock_actual <= 0) {
-      alert("¡Producto sin stock disponible!");
+      alert("¡Stock no disponible!");
       return;
     }
     const existe = carrito.find(item => item.id === producto.id);
@@ -202,7 +219,6 @@ function Ventas() {
     }
   };
 
-  // --- LÓGICA DE CATEGORÍAS (Limpia y segura) ---
   const categoriasUnicas = ['Todas', ...new Set(productos.map(p => p.categoria || 'General'))];
 
   const productosFiltrados = Array.isArray(productos) ? productos.filter(p => {
@@ -228,20 +244,18 @@ function Ventas() {
             </div>
           </header>
 
-          {/* BARRA DE BÚSQUEDA Y FILTRO JUNTOS */}
           <div className="action-bar" style={{ marginBottom: '20px', display: 'flex', gap: '15px' }}>
             <div className="search-container" style={{ flex: 1 }}>
               <span className="search-icon">🔍</span>
               <input
                 type="text"
-                placeholder="Buscar producto por nombre o código..."
+                placeholder={textosDinamicos.placeholder} 
                 className="search-input"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
               />
             </div>
             
-            {/* Nuevo selector de categoría elegante */}
             <select
               className="filter-select"
               value={categoriaSeleccionada}
@@ -254,9 +268,8 @@ function Ventas() {
             </select>
           </div>
 
-          {/* LA CUADRÍCULA ORIGINAL INTACTA */}
           <div className="products-grid">
-            {cargando ? <p>Cargando catálogo...</p> : productosFiltrados.length === 0 ? <p style={{color: '#64748b'}}>No se encontraron productos.</p> : productosFiltrados.map(producto => (
+            {cargando ? <p>Cargando catálogo...</p> : productosFiltrados.length === 0 ? <p style={{color: '#64748b'}}>{textosDinamicos.noResult}</p> : productosFiltrados.map(producto => (
               <div key={producto.id} className="product-card" onClick={() => agregarAlCarrito(producto)} style={{ cursor: 'pointer', border: '1px solid #e2e8f0', opacity: producto.stock_actual <= 0 ? 0.5 : 1 }}>
                 <div className="product-info">
                   <h4 style={{ margin: '0 0 5px 0' }}>{producto.nombre}</h4>
@@ -273,7 +286,7 @@ function Ventas() {
           </div>
         </div>
 
-        {/* Carrito (Mantenemos todo igual aquí) */}
+        {/* Carrito */}
         <div className="cart-panel" style={{ flex: 1, backgroundColor: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', height: 'fit-content' }}>
           <h3 style={{ margin: '0 0 15px 0' }}>Resumen de Venta</h3>
           <hr style={{ border: 'none', borderBottom: '1px solid #e2e8f0', margin: '0 0 15px 0' }} />

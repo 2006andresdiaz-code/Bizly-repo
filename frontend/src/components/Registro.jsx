@@ -12,6 +12,7 @@ function Registro() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [rol, setRol] = useState("2"); // 2 = Vendedor por defecto
   const [codigoAdmin, setCodigoAdmin] = useState(""); // Código secreto
+  const [tipoNegocio, setTipoNegocio] = useState("general"); // NUEVO: Estado del negocio
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
   
   const navigate = useNavigate();
@@ -40,8 +41,9 @@ function Registro() {
           apellido: apellido,
           email: correo,
           password: password,
-          id_rol: rol, // Enviamos el rol seleccionado
-          codigo_admin: codigoAdmin // Enviamos el código secreto
+          id_rol: rol, 
+          codigo_admin: codigoAdmin,
+          tipo_negocio: tipoNegocio // Enviamos el tipo de negocio al backend
         })
       });
 
@@ -127,7 +129,25 @@ function Registro() {
             />
           </div>
 
-          {/* --- NUEVO: Selector de Rol --- */}
+          {/* --- NUEVO: Selector de Tipo de Negocio --- */}
+          <div className="input-group">
+            <label>¿Qué tipo de negocio tienes? <span>*</span></label>
+            <select 
+              value={tipoNegocio} 
+              onChange={(e) => setTipoNegocio(e.target.value)}
+              style={{ width: '100%', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+              required
+            >
+              <option value="general">Negocio General / Varios</option>
+              <option value="tecnologia">Tecnología y Electrónica</option>
+              <option value="supermercado">Supermercado y Abarrotes</option>
+              <option value="farmacia">Farmacia y Droguería</option>
+              <option value="ropa">Ropa, Calzado y Boutique</option>
+              <option value="ferreteria">Ferretería y Construcción</option>
+            </select>
+          </div>
+
+          {/* Selector de Rol */}
           <div className="input-group">
             <label>Rol en el sistema <span>*</span></label>
             <select 
@@ -140,7 +160,7 @@ function Registro() {
             </select>
           </div>
 
-          {/* --- NUEVO: Cajita secreta de Administrador --- */}
+          {/* Cajita secreta de Administrador */}
           {rol === '1' && (
             <div className="input-group" style={{ backgroundColor: '#fef2f2', padding: '15px', borderRadius: '8px', border: '1px solid #fca5a5', marginTop: '5px' }}>
               <label style={{ color: '#b91c1c' }}>Código de Autorización <span>*</span></label>
