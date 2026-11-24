@@ -1,4 +1,4 @@
-// src/components/Sidebar.jsx
+﻿// src/components/Sidebar.jsx
 import { useContext } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';

@@ -1,4 +1,4 @@
-// src/components/Configuracion.jsx
+﻿// src/components/Configuracion.jsx
 import { useState, useContext } from 'react';
 import Sidebar from './Sidebar';
 import { EmpresaContext } from '../context/EmpresaContext';

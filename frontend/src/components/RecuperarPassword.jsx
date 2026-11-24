@@ -1,4 +1,4 @@
-// src/components/RecuperarPassword.jsx
+﻿// src/components/RecuperarPassword.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logoBizly from '../assets/logo-bizly.png';
@@ -20,7 +20,7 @@ function RecuperarPassword() {
     setCargando(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/recuperar', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/recuperar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: correo })
@@ -53,7 +53,7 @@ function RecuperarPassword() {
     setCargando(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/restablecer', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/restablecer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

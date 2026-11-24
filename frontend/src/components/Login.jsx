@@ -1,4 +1,4 @@
-// src/components/Login.jsx
+﻿// src/components/Login.jsx
 //Correo de prueva: samuel.torres393@example.com
 //y su contraseña es: 123456
 import { useContext } from "react";
@@ -18,7 +18,7 @@ function Login() {
     e.preventDefault();
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

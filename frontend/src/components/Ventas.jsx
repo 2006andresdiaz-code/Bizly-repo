@@ -1,4 +1,4 @@
-// src/components/Ventas.jsx
+﻿// src/components/Ventas.jsx
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { EmpresaContext } from '../context/EmpresaContext';
@@ -57,7 +57,7 @@ function Ventas() {
   const obtenerProductos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/productos', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/productos`, {
         headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });
       if (response.ok) {
@@ -74,7 +74,7 @@ function Ventas() {
   const obtenerClientes = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/clientes', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/clientes`, {
         headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });
       
@@ -174,7 +174,7 @@ function Ventas() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/ventas', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ventas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

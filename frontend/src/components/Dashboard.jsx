@@ -1,4 +1,4 @@
-// src/components/Dashboard.jsx
+﻿// src/components/Dashboard.jsx
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -20,8 +20,8 @@ function Dashboard() {
         const headers = { 'Authorization': token ? `Bearer ${token}` : '' };
 
         const [resVentas, resProductos] = await Promise.all([
-          fetch('http://localhost:5000/api/ventas', { headers }),
-          fetch('http://localhost:5000/api/productos', { headers })
+          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ventas`, { headers }),
+          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/productos`, { headers })
         ]);
 
         if (resVentas.ok) {

@@ -1,4 +1,4 @@
-// src/components/Clientes.jsx
+﻿// src/components/Clientes.jsx
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import '../styles_components/Dashboard.css';
@@ -33,7 +33,7 @@ function Clientes() {
     const parametro = verInactivos ? '?activo=0' : '?activo=1';
 
     try {
-      const res = await fetch(`http://localhost:5000/api/clientes${parametro}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/clientes${parametro}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -100,8 +100,8 @@ function Clientes() {
     const token = localStorage.getItem('token');
     const esEdicion = Boolean(form.id);
     const url = esEdicion
-      ? `http://localhost:5000/api/clientes/${form.id}`
-      : 'http://localhost:5000/api/clientes';
+      ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/clientes/${form.id}`
+      : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/clientes`;
 
     const payload = {
       nombre: form.nombre,
@@ -145,7 +145,7 @@ function Clientes() {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:5000/api/clientes/${id}/desactivar`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/clientes/${id}/desactivar`, {
         method: 'PATCH',
         headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });
@@ -166,7 +166,7 @@ function Clientes() {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:5000/api/clientes/${id}/reactivar`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/clientes/${id}/reactivar`, {
         method: 'PATCH',
         headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });

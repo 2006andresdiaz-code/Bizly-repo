@@ -1,4 +1,4 @@
-// src/components/Inventario.jsx
+﻿// src/components/Inventario.jsx
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import Sidebar from './Sidebar';
@@ -44,7 +44,7 @@ function Inventario() {
   const cargarInventario = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/productos', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/productos`, {
         headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });
       if (response.ok) {
@@ -103,7 +103,7 @@ function Inventario() {
 
     try {
       const token = localStorage.getItem('token');
-      const url = idProductoEditando ? `http://localhost:5000/api/productos/${idProductoEditando}` : 'http://localhost:5000/api/productos';
+      const url = idProductoEditando ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/productos/${idProductoEditando}` : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/productos`;
       const response = await fetch(url, {
         method: idProductoEditando ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
@@ -127,7 +127,7 @@ function Inventario() {
     if (!window.confirm(`¿Desactivar "${producto.nombre}"?`)) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/productos/${producto.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/productos/${producto.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': token ? `Bearer ${token}` : '' }
       });

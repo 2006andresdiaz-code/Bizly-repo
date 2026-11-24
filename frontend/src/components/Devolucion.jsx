@@ -1,4 +1,4 @@
-// src/components/Devolucion.jsx
+﻿// src/components/Devolucion.jsx
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { EmpresaContext } from '../context/EmpresaContext';
@@ -45,7 +45,7 @@ const Devolucion = () => {
     if (!formData.id_venta) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/ventas/${formData.id_venta}/productos`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ventas/${formData.id_venta}/productos`);
       const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
@@ -88,7 +88,7 @@ const Devolucion = () => {
     };
 
     try {
-      const response = await fetch('http://localhost:5000/api/devoluciones', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/devoluciones`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

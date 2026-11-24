@@ -1,4 +1,4 @@
-// src/components/Reportes.jsx
+﻿// src/components/Reportes.jsx
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import Sidebar from './Sidebar';
@@ -25,8 +25,8 @@ function Reportes() {
       };
 
       const [resVentas, resDevoluciones] = await Promise.all([
-        fetch('http://localhost:5000/api/ventas', { method: 'GET', headers }),
-        fetch('http://localhost:5000/api/devoluciones', { method: 'GET', headers }).catch(() => null)
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ventas`, { method: 'GET', headers }),
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/devoluciones`, { method: 'GET', headers }).catch(() => null)
       ]);
 
       if (resVentas && resVentas.ok) {

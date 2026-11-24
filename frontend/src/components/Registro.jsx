@@ -1,4 +1,4 @@
-// src/components/Registro.jsx
+﻿// src/components/Registro.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom"; 
 import logoBizly from '../assets/logo-bizly.png';
@@ -31,7 +31,7 @@ function Registro() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/registro', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/registro`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

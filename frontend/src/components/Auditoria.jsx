@@ -1,4 +1,4 @@
-// src/components/Auditoria.jsx
+﻿// src/components/Auditoria.jsx
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import '../styles_components/Dashboard.css'; 
@@ -16,7 +16,7 @@ function Auditoria() {
       try {
         const token = localStorage.getItem('token');
         // Ajusta la ruta '/api/auditoria' si Jonathan la nombró diferente en backend/src/routes/
-        const response = await fetch('http://localhost:5000/api/auditoria', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auditoria`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
