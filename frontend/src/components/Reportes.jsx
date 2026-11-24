@@ -2,33 +2,42 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import Sidebar from './Sidebar';
-import '../styles_components/Dashboard.css'; 
-import '../styles_components/Ventas.css'; 
-import '../styles_components/Reportes.css'; 
+import '../styles_components/Dashboard.css';
+import '../styles_components/Ventas.css';
+import '../styles_components/Reportes.css';
 
 function Reportes() {
   const { usuario } = useContext(AuthContext);
   const [ventas, setVentas] = useState([]);
+  const [devoluciones, setDevoluciones] = useState([]);
   const [cargando, setCargando] = useState(true);
-  
+
   const [busqueda, setBusqueda] = useState('');
-  const [filtroTiempo, setFiltroTiempo] = useState('Todo'); 
+  const [filtroTiempo, setFiltroTiempo] = useState('Todo');
 
   const cargarReportes = async () => {
     setCargando(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/ventas', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        }
-      });
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+      };
 
-      if (response.ok) {
-        const data = await response.json();
-        setVentas(Array.isArray(data) ? data : []);
+      const [resVentas, resDevoluciones] = await Promise.all([
+        fetch('http://localhost:5000/api/ventas', { method: 'GET', headers }),
+        fetch('http://localhost:5000/api/devoluciones', { method: 'GET', headers }).catch(() => null)
+      ]);
+
+      if (resVentas && resVentas.ok) {
+        const dataVentas = await resVentas.json();
+        setVentas(Array.isArray(dataVentas) ? dataVentas : []);
+      }
+
+      if (resDevoluciones && resDevoluciones.ok) {
+        const dataDev = await resDevoluciones.json();
+        const listaDev = Array.isArray(dataDev) ? dataDev : (dataDev.devoluciones || []);
+        setDevoluciones(listaDev);
       }
     } catch (error) {
       console.error("Error de conexión al cargar reportes:", error);
@@ -41,27 +50,36 @@ function Reportes() {
     cargarReportes();
   }, []);
 
-  const ventasPorFecha = ventas.filter(v => {
+  const cumpleFiltroTiempo = (fechaRaw) => {
     if (filtroTiempo === 'Todo') return true;
-    
-    const fechaVenta = new Date(v.created_at);
+    if (!fechaRaw) return false;
+
+    const fechaRegistro = new Date(fechaRaw);
     const hoy = new Date();
-    
+
     if (filtroTiempo === 'Hoy') {
-      return fechaVenta.toDateString() === hoy.toDateString();
+      return fechaRegistro.toDateString() === hoy.toDateString();
     }
     if (filtroTiempo === 'Semana') {
       const hace7Dias = new Date();
       hace7Dias.setDate(hoy.getDate() - 7);
-      return fechaVenta >= hace7Dias;
+      return fechaRegistro >= hace7Dias;
     }
     if (filtroTiempo === 'Mes') {
-      return fechaVenta.getMonth() === hoy.getMonth() && fechaVenta.getFullYear() === hoy.getFullYear();
+      return (
+        fechaRegistro.getMonth() === hoy.getMonth() &&
+        fechaRegistro.getFullYear() === hoy.getFullYear()
+      );
     }
     return true;
-  });
+  };
 
-  const ventasFiltradas = ventasPorFecha.filter(v => {
+  const ventasPorFecha = ventas.filter((v) => cumpleFiltroTiempo(v.created_at));
+  const devolucionesPorFecha = devoluciones.filter((d) =>
+    cumpleFiltroTiempo(d.created_at || d.fecha || d.fecha_devolucion)
+  );
+
+  const ventasFiltradas = ventasPorFecha.filter((v) => {
     const numFacturaStr = `FAC-${String(v.id).padStart(5, '0')}`;
     return (
       numFacturaStr.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -74,17 +92,34 @@ function Reportes() {
   const ticketPromedio = totalVentas > 0 ? ingresos / totalVentas : 0;
   const ivaRecaudado = ingresos * 0.19;
 
-  const ingresosEfectivo = ventasFiltradas.filter(v => v.metodo_pago?.toLowerCase().includes('efectivo')).reduce((acc, v) => acc + Number(v.total), 0);
-  const ingresosTarjeta = ventasFiltradas.filter(v => v.metodo_pago?.toLowerCase().includes('tarjeta')).reduce((acc, v) => acc + Number(v.total), 0);
-  const ingresosTransf = ventasFiltradas.filter(v => v.metodo_pago?.toLowerCase().includes('nequi') || v.metodo_pago?.toLowerCase().includes('transf') || v.metodo_pago?.toLowerCase().includes('daviplata')).reduce((acc, v) => acc + Number(v.total), 0);
+  const totalDevoluciones = devolucionesPorFecha.length;
+  const montoReembolsado = devolucionesPorFecha.reduce(
+    (acc, d) => acc + Number(d.monto_reembolso ?? d.total_reembolso ?? d.total ?? d.monto ?? 0),
+    0
+  );
+
+  const ingresosEfectivo = ventasFiltradas
+    .filter((v) => v.metodo_pago?.toLowerCase().includes('efectivo'))
+    .reduce((acc, v) => acc + Number(v.total), 0);
+  const ingresosTarjeta = ventasFiltradas
+    .filter((v) => v.metodo_pago?.toLowerCase().includes('tarjeta'))
+    .reduce((acc, v) => acc + Number(v.total), 0);
+  const ingresosTransf = ventasFiltradas
+    .filter(
+      (v) =>
+        v.metodo_pago?.toLowerCase().includes('nequi') ||
+        v.metodo_pago?.toLowerCase().includes('transf') ||
+        v.metodo_pago?.toLowerCase().includes('daviplata')
+    )
+    .reduce((acc, v) => acc + Number(v.total), 0);
 
   const exportarAExcel = () => {
     if (ventasFiltradas.length === 0) return alert("No hay datos para exportar.");
-    
+
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "NO. FACTURA,FECHA,METODO DE PAGO,TOTAL\n";
 
-    ventasFiltradas.forEach(v => {
+    ventasFiltradas.forEach((v) => {
       const factura = `FAC-${String(v.id).padStart(5, '0')}`;
       const fecha = v.created_at ? new Date(v.created_at).toLocaleString() : 'N/A';
       const metodo = v.metodo_pago || 'N/A';
@@ -104,7 +139,7 @@ function Reportes() {
   return (
     <div className="admin-container">
       <Sidebar />
-      
+
       <main className="main-content">
         <header className="top-header">
           <div>
@@ -113,22 +148,22 @@ function Reportes() {
             <p className="subtitle">Historial completo sincronizado con la base de datos</p>
           </div>
           <div className="header-actions">
-            <button className="btn-secondary" onClick={exportarAExcel} style={{ marginRight: '10px', color: '#16a34a', borderColor: '#16a34a' }}>
+            <button className="btn-reporte btn-excel" onClick={exportarAExcel}>
               📊 Exportar Excel
             </button>
-            <button className="btn-secondary" onClick={() => window.print()}>
+            <button className="btn-reporte btn-imprimir" onClick={() => window.print()}>
               ⭳ Imprimir Reporte
             </button>
-            <div className="header-user" style={{marginLeft: '20px'}}>
+            <div className="header-user">
               <strong>{usuario?.nombre} {usuario?.apellido}</strong>
             </div>
           </div>
         </header>
 
         {/* Botones de Filtro Rápido */}
-        <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
-          {['Hoy', 'Semana', 'Mes', 'Todo'].map(filtro => (
-            <button 
+        <div className="filtros-rapidos-bar" style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+          {['Hoy', 'Semana', 'Mes', 'Todo'].map((filtro) => (
+            <button
               key={filtro}
               onClick={() => setFiltroTiempo(filtro)}
               style={{
@@ -147,8 +182,15 @@ function Reportes() {
           ))}
         </div>
 
-        {/* 4 Tarjetas de resumen dinámicas - AHORA FORZADAS A 4 COLUMNAS */}
-        <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '20px' }}>
+        {/* 5 Tarjetas de resumen dinámicas (incluye Reembolsos) */}
+        <div
+          className="metrics-grid"
+          style={{
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px',
+            marginBottom: '20px'
+          }}
+        >
           <div className="metric-card">
             <div className="metric-icon metric-icon-green">📄</div>
             <div className="metric-info">
@@ -177,6 +219,15 @@ function Reportes() {
               <p className="metric-value">$ {cargando ? '...' : Math.round(ivaRecaudado).toLocaleString()}</p>
             </div>
           </div>
+          <div className="metric-card">
+            <div className="metric-icon metric-icon-red">↩️</div>
+            <div className="metric-info">
+              <h3>Reembolsos ({cargando ? '...' : totalDevoluciones})</h3>
+              <p className="metric-value" style={{ color: '#dc2626' }}>
+                $ {cargando ? '...' : montoReembolsado.toLocaleString()}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Desglose por Método de Pago - 3 COLUMNAS */}
@@ -199,9 +250,9 @@ function Reportes() {
         <div className="panel table-panel" style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 style={{ margin: 0, color: '#1e293b' }}>HISTORIAL DE FACTURAS EMITIDAS</h3>
-            <input 
-              type="text" 
-              placeholder="Filtrar por factura o método..." 
+            <input
+              type="text"
+              placeholder="Filtrar por factura o método..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', width: '250px' }}
@@ -245,7 +296,6 @@ function Reportes() {
             </table>
           </div>
         </div>
-
       </main>
     </div>
   );

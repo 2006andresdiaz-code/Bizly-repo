@@ -1,6 +1,21 @@
 // src/controllers/devolucionController.js
 const db = require('../config/db');
 
+// Obtener todas las devoluciones registradas
+exports.obtenerDevoluciones = async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM devoluciones ORDER BY id DESC');
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Error al obtener devoluciones:', error);
+    res.status(500).json({
+      error: 'Error interno al consultar las devoluciones',
+      detalle: error.message
+    });
+  }
+};
+
+// Procesar una nueva devolución
 exports.crearDevolucion = async (req, res) => {
   const connection = await db.getConnection();
   try {
