@@ -103,9 +103,12 @@ exports.obtenerVentas = async (req, res) => {
   }
 };
 
-// --- 3. FUNCIÓN PARA DEVOLUCIONES (Bloquea duplicados) ---
+// --- 3. FUNCIÓN PARA DEVOLUCIONES (Bloquea duplicados y soporta FAC-000007 o ID) ---
 exports.obtenerProductosPorFactura = async (req, res) => {
-  const idFactura = req.params.id;
+  const rawId = req.params.id.trim();
+  // Si viene como "FAC-000007" o "000007", extrae el número 7; si no, queda null
+  const numericMatch = rawId.replace(/^FAC-/i, '');
+  const idNumerico = /^\d+$/.test(numericMatch) ? Number(numericMatch) : null;
 
   try {
     const query = `
@@ -113,26 +116,30 @@ exports.obtenerProductosPorFactura = async (req, res) => {
         dv.id_producto, 
         p.nombre AS nombre_producto, 
         dv.cantidad AS cantidad_comprada, 
-        p.precio_venta AS precio,
-        COALESCE((SELECT SUM(cantidad) FROM devoluciones d WHERE d.id_venta = v.id AND d.id_producto = dv.id_producto), 0) AS cantidad_devuelta
+        dv.precio_unit AS precio,
+        COALESCE((
+          SELECT SUM(d.cantidad) 
+          FROM devoluciones d 
+          WHERE d.id_venta = v.id AND d.id_producto = dv.id_producto
+        ), 0) AS cantidad_devuelta
       FROM detalle_ventas dv
       JOIN productos p ON dv.id_producto = p.id
       JOIN ventas v ON dv.id_venta = v.id
-      WHERE v.numero_factura = ? OR v.id = ?
+      WHERE v.numero_factura = ? OR (? IS NOT NULL AND v.id = ?)
     `;
 
-    const [productos] = await db.query(query, [idFactura, idFactura]);
+    const [productos] = await db.query(query, [rawId, idNumerico, idNumerico]);
 
     if (productos.length === 0) {
       return res.status(404).json({ mensaje: 'Factura no encontrada.' });
     }
 
-    const productosDisponibles = productos.map(prod => {
-      return {
+    const productosDisponibles = productos
+      .map(prod => ({
         ...prod,
-        cantidad: prod.cantidad_comprada - prod.cantidad_devuelta 
-      };
-    }).filter(prod => prod.cantidad > 0); 
+        cantidad: prod.cantidad_comprada - prod.cantidad_devuelta
+      }))
+      .filter(prod => prod.cantidad > 0);
 
     if (productosDisponibles.length === 0) {
       return res.status(400).json({ mensaje: 'Todos los productos de esta factura ya fueron devueltos.' });
