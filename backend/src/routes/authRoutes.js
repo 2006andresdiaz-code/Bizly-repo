@@ -11,4 +11,8 @@ router.post('/registro', authController.registrar);
 // Ruta para obtener la lista de usuarios (GET)
 router.get('/usuarios', authController.obtenerUsuarios);
 
+// Rutas para recuperación de contraseña
+router.post('/recuperar', authController.solicitarRecuperacion);
+router.post('/restablecer', authController.restablecerPassword);
+
 module.exports = router;
