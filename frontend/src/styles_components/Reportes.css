@@ -91,3 +91,60 @@
   font-size: 11px;
   color: #94a3b8;
 }
+/* --- Contenedor y botones de acción del encabezado --- */
+.reportes-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: 265px; /* Separa los botones del nombre del usuario a la derecha */
+  flex-wrap: wrap;
+}
+
+.btn-reporte {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.btn-excel {
+  background-color: #10b981;
+  color: #ffffff;
+  border: 1px solid #059669;
+}
+
+.btn-excel:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+}
+
+.btn-imprimir {
+  background-color: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-imprimir:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+/* Oculta los botones y filtros al imprimir o guardar como PDF */
+@media print {
+  .reportes-header-actions,
+  .date-filter-bar {
+    display: none !important;
+  }
+}
